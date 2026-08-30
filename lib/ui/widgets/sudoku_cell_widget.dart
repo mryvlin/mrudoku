@@ -32,23 +32,30 @@ class SudokuCellWidget extends StatelessWidget {
     this.highlightedValue = 0,
   });
 
+  /// Highlight tint used for selection/peer/same-value/matching-note
+  /// emphasis. Kept separate from `colorScheme.primary` (which still drives
+  /// the app's overall theme) so it can be tuned independently.
+  static Color _highlightColor(ThemeData theme) =>
+      theme.brightness == Brightness.dark ? Colors.green.shade300 : Colors.green.shade700;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final highlight = _highlightColor(theme);
 
     final hasMatchingNote =
         highlightedValue != 0 && cell.isEmpty && cell.notes.contains(highlightedValue);
 
     final Color background;
     if (isSelected) {
-      background = colors.primary.withValues(alpha: 0.35);
+      background = highlight.withValues(alpha: 0.35);
     } else if (isSameValueHighlighted) {
-      background = colors.primary.withValues(alpha: 0.20);
+      background = highlight.withValues(alpha: 0.20);
     } else if (hasMatchingNote) {
-      background = colors.primary.withValues(alpha: 0.12);
+      background = highlight.withValues(alpha: 0.12);
     } else if (isPeerHighlighted) {
-      background = colors.primary.withValues(alpha: 0.08);
+      background = highlight.withValues(alpha: 0.08);
     } else {
       background = colors.surface;
     }
@@ -96,7 +103,7 @@ class SudokuCellWidget extends StatelessWidget {
       fontSize: 10,
     );
     final matchingStyle = normalStyle?.copyWith(
-      color: theme.colorScheme.primary,
+      color: _highlightColor(theme),
       fontWeight: FontWeight.w800,
     );
     return Padding(
