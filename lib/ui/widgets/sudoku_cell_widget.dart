@@ -36,7 +36,7 @@ class SudokuCellWidget extends StatelessWidget {
   /// emphasis. Kept separate from `colorScheme.primary` (which still drives
   /// the app's overall theme) so it can be tuned independently.
   static Color _highlightColor(ThemeData theme) =>
-      theme.brightness == Brightness.dark ? Colors.green.shade300 : Colors.green.shade700;
+      theme.brightness == Brightness.dark ? Colors.red.shade300 : Colors.red.shade700;
 
   @override
   Widget build(BuildContext context) {
@@ -75,22 +75,24 @@ class SudokuCellWidget extends StatelessWidget {
           ),
         ),
         alignment: Alignment.center,
-        child: cell.isEmpty ? _buildNotes(theme) : _buildValue(theme),
+        child: cell.isEmpty ? _buildNotes(theme) : _buildValue(theme, isSameValueHighlighted || isSelected),
       ),
     );
   }
 
-  Widget _buildValue(ThemeData theme) {
+  Widget _buildValue(ThemeData theme, bool isHighlighted) {
     final color = isError
         ? theme.colorScheme.error
-        : cell.isGiven
-            ? theme.colorScheme.onSurface
-            : theme.colorScheme.primary;
+        : isHighlighted
+            ? _highlightColor(theme)
+            : cell.isGiven
+                ? theme.colorScheme.onSurface
+                : theme.colorScheme.primary;
     return Text(
       '${cell.value}',
       style: theme.textTheme.headlineSmall?.copyWith(
         color: color,
-        fontWeight: cell.isGiven ? FontWeight.w700 : FontWeight.w500,
+        fontWeight: isHighlighted ? FontWeight.w800 : (cell.isGiven ? FontWeight.w700 : FontWeight.w500),
       ),
     );
   }
@@ -100,7 +102,7 @@ class SudokuCellWidget extends StatelessWidget {
     final normalStyle = theme.textTheme.labelSmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
       height: 1,
-      fontSize: 10,
+      fontSize: 12,
     );
     final matchingStyle = normalStyle?.copyWith(
       color: _highlightColor(theme),
