@@ -8,6 +8,7 @@ import '../../models/difficulty.dart';
 import '../../models/game_state.dart';
 import '../../models/settings.dart';
 import '../format_duration.dart';
+import '../widgets/leaderboard_widget.dart';
 import 'game_screen.dart';
 import 'settings_screen.dart';
 
@@ -20,6 +21,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final savedGame = ref.watch(savedGameProvider);
     final settings = ref.watch(settingsControllerProvider);
+    final leaderboard = ref.watch(leaderboardControllerProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -78,6 +80,8 @@ class HomeScreen extends ConsumerWidget {
                         ),
                     ],
                   ),
+                  const SizedBox(height: 32),
+                  LeaderboardWidget(entries: leaderboard),
                 ],
               ),
             ),

@@ -105,4 +105,22 @@ void main() {
       }
     }
   });
+
+  test('solving the puzzle records a leaderboard entry for its difficulty', () async {
+    final solution = state().solution;
+    for (var r = 0; r < 9; r++) {
+      for (var c = 0; c < 9; c++) {
+        if (state().board.cellAt(r, c).isGiven) continue;
+        controller.selectCell(r, c);
+        controller.inputNumber(solution.cellAt(r, c).value);
+      }
+    }
+
+    expect(state().isWon, isTrue);
+    await pumpEventQueue();
+    final leaderboard = container.read(leaderboardControllerProvider);
+    expect(leaderboard, hasLength(1));
+    expect(leaderboard.single.difficulty, Difficulty.easy);
+    expect(leaderboard.single.elapsedSeconds, state().elapsedSeconds);
+  });
 }

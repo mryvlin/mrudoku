@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/board.dart';
 import '../models/difficulty.dart';
 import '../models/game_state.dart';
+import '../models/leaderboard_entry.dart';
 import '../models/settings.dart';
 import '../services/game_persistence_service.dart';
 import '../services/puzzle_generation_service.dart';
 import '../services/sound_service.dart';
 import 'candidates.dart';
 import 'hint_engine.dart';
+import 'leaderboard_controller.dart';
 import 'service_providers.dart';
 import 'settings_controller.dart';
 import 'validator.dart';
@@ -127,6 +129,7 @@ class GameController extends Notifier<GameState?> {
     if (Validator.isSolved(newBoard)) {
       newState = newState.copyWith(isWon: true);
       _sound.win();
+      _recordWin(s.difficulty, newState.elapsedSeconds);
     }
 
     state = newState;
@@ -226,11 +229,22 @@ class GameController extends Notifier<GameState?> {
     if (Validator.isSolved(newBoard)) {
       newState = newState.copyWith(isWon: true);
       _sound.win();
+      _recordWin(s.difficulty, newState.elapsedSeconds);
     }
 
     state = newState;
     await _persist();
     return explanation;
+  }
+
+  void _recordWin(Difficulty difficulty, int elapsedSeconds) {
+    ref.read(leaderboardControllerProvider.notifier).addEntry(
+          LeaderboardEntry(
+            difficulty: difficulty,
+            elapsedSeconds: elapsedSeconds,
+            achievedAt: DateTime.now(),
+          ),
+        );
   }
 
   GameState _withHistory(GameState s, Board newBoard) {

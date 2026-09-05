@@ -4,6 +4,7 @@ import '../models/game_state.dart';
 import 'service_providers.dart';
 
 export 'game_controller.dart';
+export 'leaderboard_controller.dart';
 export 'service_providers.dart';
 export 'settings_controller.dart';
 
