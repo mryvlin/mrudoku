@@ -33,7 +33,10 @@ extension DifficultyX on Difficulty {
 
   /// The hardest solving technique a puzzle of this difficulty is allowed to
   /// require, used by the generator to reject puzzles that are too easy or
-  /// (for easy/medium) too hard. See [SolvingTechnique] for the ordering.
+  /// (for easy/medium) too hard. See `SolvingTechnique` in hint_engine.dart
+  /// for the ordering; these numbers must track its enum indices (checked by
+  /// a test) but are duplicated as plain ints here so this model doesn't
+  /// depend on the logic layer.
   int get maxAllowedTechniqueRank {
     switch (this) {
       case Difficulty.easy:
@@ -41,9 +44,9 @@ extension DifficultyX on Difficulty {
       case Difficulty.medium:
         return 1; // up to hidden single
       case Difficulty.hard:
-        return 2; // up to naked/hidden pair
+        return 2; // up to naked/pointing pair or box-line reduction
       case Difficulty.expert:
-        return 3; // pointing pairs and beyond, or backtracking
+        return 6; // hidden pair, naked triple, X-Wing and beyond, or backtracking
     }
   }
 }
