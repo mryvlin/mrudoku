@@ -122,9 +122,19 @@ class SudokuCellWidget extends StatelessWidget {
                         child: Builder(builder: (context) {
                           final digit = row * 3 + col + 1;
                           if (!cell.notes.contains(digit)) return const SizedBox.shrink();
-                          return Text(
+                          final isMatching = digit == highlightedValue;
+                          final text = Text(
                             '$digit',
-                            style: digit == highlightedValue ? matchingStyle : normalStyle,
+                            style: isMatching ? matchingStyle : normalStyle,
+                          );
+                          if (!isMatching) return text;
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 1),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: _highlightColor(theme), width: 1),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: text,
                           );
                         }),
                       ),
