@@ -242,10 +242,10 @@ void main() {
   group('while paused', () {
     setUp(() => controller.togglePause());
 
-    test('useHint is a no-op', () async {
+    test('peekHint is a no-op', () {
       final before = state().hintsRemaining;
 
-      final step = await controller.useHint();
+      final step = controller.peekHint();
 
       expect(step, isNull);
       expect(state().hintsRemaining, before);
@@ -295,23 +295,51 @@ void main() {
     });
   });
 
-  test('a hint reduces the remaining hint count and places a correct value', () async {
+  test('peekHint selects the hinted cell but does not place its value or spend a hint', () {
     final before = state().hintsRemaining;
 
-    final step = await controller.useHint();
+    final step = controller.peekHint();
 
     expect(step, isNotNull);
-    expect(state().hintsRemaining, before - 1);
+    expect(state().hintsRemaining, before, reason: 'peeking alone must not spend a hint');
+    expect(state().board.cellAt(step!.row, step.col).value, 0);
+    expect(state().selectedRow, step.row);
+    expect(state().selectedCol, step.col);
   });
 
-  test('useHint refuses to hint while a wrong entry is still on the board', () async {
+  test('confirmHint places the value and spends exactly one hint', () {
+    final before = state().hintsRemaining;
+    final step = controller.peekHint()!;
+
+    controller.confirmHint(step);
+
+    expect(state().hintsRemaining, before - 1);
+    expect(state().board.cellAt(step.row, step.col).value, step.value);
+  });
+
+  test('confirmHint is a no-op if the target cell was filled in the meantime', () {
+    final step = controller.peekHint()!;
+    final before = state().hintsRemaining;
+    // Simulate the player entering something else there while the hint's
+    // banner was still up, before tapping "Got it".
+    controller.selectCell(step.row, step.col);
+    final otherValue = (step.value % 9) + 1;
+    controller.inputNumber(otherValue);
+
+    controller.confirmHint(step);
+
+    expect(state().hintsRemaining, before, reason: 'a stale confirm must not spend a hint either');
+    expect(state().board.cellAt(step.row, step.col).value, otherValue);
+  });
+
+  test('peekHint refuses to hint while a wrong entry is still on the board', () {
     controller.restore(_fixtureState());
     controller.selectCell(0, 0);
     controller.inputNumber(3); // solution at (0, 0) is 5, so 3 is wrong
     expect(state().mistakes, 1);
     final hintsBefore = state().hintsRemaining;
 
-    final step = await controller.useHint();
+    final step = controller.peekHint();
 
     expect(step, isNull);
     expect(state().hintsRemaining, hintsBefore);

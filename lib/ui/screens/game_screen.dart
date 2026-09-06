@@ -223,9 +223,12 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
     return counts;
   }
 
-  Future<void> _useHint() async {
-    final step = await ref.read(gameControllerProvider.notifier).useHint();
-    if (step == null || !mounted) return;
+  void _useHint() {
+    // Only peeks - selects the hinted cell and shows its explanation/
+    // highlight - without placing the value. The value is placed by
+    // confirmHint once the player taps "Got it" below.
+    final step = ref.read(gameControllerProvider.notifier).peekHint();
+    if (step == null) return;
 
     final l10n = AppLocalizations.of(context)!;
     setState(() => _lastHint = step);
@@ -243,6 +246,7 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
             TextButton(
               onPressed: () {
                 _messenger.hideCurrentMaterialBanner();
+                ref.read(gameControllerProvider.notifier).confirmHint(step);
                 if (mounted) setState(() => _lastHint = null);
               },
               child: Text(l10n.hintDismiss),

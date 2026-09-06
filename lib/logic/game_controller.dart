@@ -274,12 +274,18 @@ class GameController extends Notifier<GameState?> {
     _schedulePersist();
   }
 
-  /// Places the next logically derivable number (see [HintEngine]) and
-  /// returns the [HintStep] taken - the UI (see `ui/hint_text.dart`) turns
-  /// this into a localized explanation - or `null` if no hint could be given
-  /// (no hints left, game finished/paused, or a wrong entry needs clearing
-  /// first - see [_hasWrongEntry]).
-  Future<HintStep?> useHint() async {
+  /// Computes the next logically derivable step (see [HintEngine]) and
+  /// selects its cell - so the board highlights it (see
+  /// `SudokuBoardWidget.hintFocusUnit` and `GameScreen`) - without placing
+  /// its value yet. The UI shows the step's explanation (`ui/hint_text.dart`)
+  /// and only calls [confirmHint] once the player acknowledges it (e.g. taps
+  /// "Got it"), so a hint teaches before it gives the answer away.
+  ///
+  /// Returns `null` if no hint could be given (no hints left, game
+  /// finished/paused, or a wrong entry needs clearing first - see
+  /// [_hasWrongEntry]). Doesn't consume a hint charge or touch the board by
+  /// itself - only [confirmHint] does that.
+  HintStep? peekHint() {
     final s = state;
     if (s == null || _locked(s) || s.hintsRemaining <= 0) return null;
     // A wrong-but-not-rule-breaking entry (e.g. a digit that's correct
@@ -308,7 +314,21 @@ class GameController extends Notifier<GameState?> {
       );
     }
 
+    state = s.copyWith(selectedRow: step.row, selectedCol: step.col);
+    return step;
+  }
+
+  /// Places the value from a [step] previously returned by [peekHint], once
+  /// the player has acknowledged its explanation. A no-op if the target
+  /// cell is no longer empty - e.g. the player entered something else there
+  /// while the hint was still showing - so a stale hint can't silently
+  /// overwrite whatever they placed instead.
+  void confirmHint(HintStep step) {
+    final s = state;
+    if (s == null || _locked(s)) return;
     final cell = s.board.cellAt(step.row, step.col);
+    if (!cell.isEmpty) return;
+
     final placedBoard = s.board.setCell(step.row, step.col, cell.copyWith(value: step.value, clearNotes: true));
     final newBoard = _stripNoteFromPeers(placedBoard, step.row, step.col, step.value);
 
@@ -327,11 +347,10 @@ class GameController extends Notifier<GameState?> {
     state = newState;
     // See inputNumber: a win is flushed immediately rather than debounced.
     if (newState.isWon) {
-      await saveNow();
+      saveNow();
     } else {
       _schedulePersist();
     }
-    return step;
   }
 
   void _recordWin(Difficulty difficulty, int elapsedSeconds) {

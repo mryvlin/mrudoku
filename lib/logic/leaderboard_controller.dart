@@ -5,7 +5,7 @@ import '../services/leaderboard_service.dart';
 import 'service_providers.dart';
 
 /// Loads the leaderboard on startup and appends new entries as games are won
-/// (see [GameController.inputNumber]/[GameController.useHint]).
+/// (see [GameController.inputNumber]/[GameController.confirmHint]).
 class LeaderboardController extends Notifier<List<LeaderboardEntry>> {
   LeaderboardService get _service => ref.read(leaderboardServiceProvider);
 

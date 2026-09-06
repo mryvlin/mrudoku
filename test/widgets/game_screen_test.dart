@@ -4,10 +4,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mrsudoku/l10n/app_localizations.dart';
 import 'package:mrsudoku/logic/candidates.dart';
 import 'package:mrsudoku/logic/providers.dart';
+import 'package:mrsudoku/models/board.dart';
 import 'package:mrsudoku/models/difficulty.dart';
 import 'package:mrsudoku/models/game_state.dart';
 import 'package:mrsudoku/ui/screens/game_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+int _filledCellCount(Board board) {
+  var count = 0;
+  for (var r = 0; r < 9; r++) {
+    for (var c = 0; c < 9; c++) {
+      if (!board.cellAt(r, c).isEmpty) count++;
+    }
+  }
+  return count;
+}
 
 (int, int) _firstEmptyCell(GameState state) {
   for (var r = 0; r < 9; r++) {
@@ -115,6 +126,39 @@ void main() {
 
     // Flush the debounced autosave timers inputNumber/undo scheduled, so
     // the test doesn't end with a pending Timer.
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('a hint only highlights until "Got it" is tapped, which then places it', (tester) async {
+    // The default 800x600 test surface is too short for the full game UI
+    // plus the hint banner - the banner's action button ends up laid out
+    // off-screen and untappable. Use a taller, phone-like viewport instead.
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final container = await _startedContainer(tester);
+    final filledBefore = _filledCellCount(container.read(gameControllerProvider)!.board);
+
+    await tester.tap(find.byKey(const ValueKey('toolbar-hint')));
+    await tester.pumpAndSettle();
+
+    // Peeking alone must not have placed anything yet.
+    expect(_filledCellCount(container.read(gameControllerProvider)!.board), filledBefore);
+    expect(find.byType(MaterialBanner), findsOneWidget);
+    final hintsAfterPeek = container.read(gameControllerProvider)!.hintsRemaining;
+
+    final l10n = AppLocalizations.of(tester.element(find.byType(GameScreen)))!;
+    await tester.tap(find.text(l10n.hintDismiss));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MaterialBanner), findsNothing);
+    expect(_filledCellCount(container.read(gameControllerProvider)!.board), filledBefore + 1);
+    expect(container.read(gameControllerProvider)!.hintsRemaining, hintsAfterPeek - 1);
+
+    // Flush the debounced autosave timer confirmHint scheduled, so the test
+    // doesn't end with a pending Timer.
     await tester.pump(const Duration(seconds: 1));
   });
 }
