@@ -23,13 +23,14 @@ class GameScreen extends ConsumerStatefulWidget {
   ConsumerState<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends ConsumerState<GameScreen> {
+class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObserver {
   Timer? _timer;
   bool _endDialogShown = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       ref.read(gameControllerProvider.notifier).tick();
     });
@@ -37,8 +38,18 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
+  }
+
+  // Flushes the current state to disk as soon as the app is backgrounded or
+  // closed, rather than waiting for the timer tick's throttled autosave.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      ref.read(gameControllerProvider.notifier).saveNow();
+    }
   }
 
   @override
@@ -66,7 +77,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
     final remainingCounts = _remainingCounts(gameState.board);
 
-    return Scaffold(
+    final scaffold = Scaffold(
       appBar: AppBar(
         title: Text('Sudoku - ${gameState.difficulty.label}'),
         actions: [
@@ -141,6 +152,16 @@ class _GameScreenState extends ConsumerState<GameScreen> {
           ),
         ),
       ),
+    );
+
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        // Covers the AppBar back arrow and system back gesture: neither goes
+        // through _leaveToMenu, so flush explicitly on the way out.
+        if (didPop) ref.read(gameControllerProvider.notifier).saveNow();
+      },
+      child: scaffold,
     );
   }
 

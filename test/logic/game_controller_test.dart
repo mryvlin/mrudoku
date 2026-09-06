@@ -106,6 +106,26 @@ void main() {
     }
   });
 
+  test('the saved-game provider reflects progress after a move, for Home to offer resume', () async {
+    final pos = _firstEmptyCell(state());
+    controller.selectCell(pos.$1, pos.$2);
+    final correctValue = state().solution.cellAt(pos.$1, pos.$2).value;
+    controller.inputNumber(correctValue);
+    await pumpEventQueue();
+
+    final saved = await container.read(savedGameProvider.future);
+    expect(saved, isNotNull);
+    expect(saved!.difficulty, Difficulty.easy);
+    expect(saved.board.cellAt(pos.$1, pos.$2).value, correctValue);
+  });
+
+  test('abandoning the game clears the saved-game provider, leaving only "start new"', () async {
+    await controller.abandonGame();
+    await pumpEventQueue();
+
+    expect(await container.read(savedGameProvider.future), isNull);
+  });
+
   test('solving the puzzle records a leaderboard entry for its difficulty', () async {
     final solution = state().solution;
     for (var r = 0; r < 9; r++) {

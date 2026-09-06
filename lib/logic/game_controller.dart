@@ -11,6 +11,7 @@ import '../services/sound_service.dart';
 import 'candidates.dart';
 import 'hint_engine.dart';
 import 'leaderboard_controller.dart';
+import 'saved_game_provider.dart';
 import 'service_providers.dart';
 import 'settings_controller.dart';
 import 'validator.dart';
@@ -62,7 +63,14 @@ class GameController extends Notifier<GameState?> {
   Future<void> abandonGame() async {
     state = null;
     await _persistence.clear();
+    ref.invalidate(savedGameProvider);
   }
+
+  /// Forces an immediate write of the current state, bypassing the timer
+  /// tick's throttling. Used when the player is about to leave the game
+  /// (back navigation, app backgrounded/closed) so nothing since the last
+  /// throttled save is lost.
+  Future<void> saveNow() => _persist();
 
   void selectCell(int row, int col) {
     final s = state;
@@ -293,7 +301,9 @@ class GameController extends Notifier<GameState?> {
 
   Future<void> _persist() async {
     final s = state;
-    if (s != null) await _persistence.save(s);
+    if (s == null) return;
+    await _persistence.save(s);
+    ref.invalidate(savedGameProvider);
   }
 }
 
