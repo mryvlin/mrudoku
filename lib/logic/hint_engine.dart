@@ -52,8 +52,9 @@ class HintStep {
     this.singleKind = SingleKind.naked,
     this.hiddenUnit,
   }) : assert(
-          hiddenUnit == null || singleKind == SingleKind.hidden,
-          'hiddenUnit is only meaningful when singleKind is hidden',
+          (singleKind == SingleKind.hidden) == (hiddenUnit != null),
+          'hiddenUnit must be set if and only if singleKind is hidden - '
+          'ui/hint_text.dart force-unwraps it whenever singleKind is hidden',
         );
 }
 

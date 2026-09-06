@@ -3,6 +3,34 @@ import 'package:mrsudoku/logic/hint_engine.dart';
 import 'package:mrsudoku/models/board.dart';
 
 void main() {
+  group('HintStep', () {
+    test('rejects singleKind: hidden without a hiddenUnit', () {
+      expect(
+        () => HintStep(
+          row: 0,
+          col: 0,
+          value: 1,
+          technique: SolvingTechnique.hiddenSingle,
+          singleKind: SingleKind.hidden,
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('rejects a hiddenUnit paired with singleKind: naked', () {
+      expect(
+        () => HintStep(
+          row: 0,
+          col: 0,
+          value: 1,
+          technique: SolvingTechnique.nakedSingle,
+          hiddenUnit: HintUnitType.row,
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+  });
+
   group('HintEngine', () {
     test('finds a naked single as the last empty cell in a row', () {
       final values = [
