@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/board.dart';
@@ -11,7 +13,6 @@ import '../services/sound_service.dart';
 import 'candidates.dart';
 import 'hint_engine.dart';
 import 'leaderboard_controller.dart';
-import 'saved_game_provider.dart';
 import 'service_providers.dart';
 import 'settings_controller.dart';
 import 'validator.dart';
@@ -25,6 +26,14 @@ import 'validator.dart';
 class GameController extends Notifier<GameState?> {
   bool isGenerating = false;
   int _ticksSinceSave = 0;
+  Timer? _saveDebounce;
+
+  /// How long a routine edit (a keystroke, a notes toggle, undo/redo, ...)
+  /// waits before actually hitting disk, coalescing a burst of edits into
+  /// one write instead of one per edit. Game-ending transitions and
+  /// lifecycle/back-navigation events bypass this via [saveNow] so they're
+  /// never lost to an unflushed debounce if the app is killed right after.
+  static const _saveDebounceDelay = Duration(milliseconds: 800);
 
   GamePersistenceService get _persistence => ref.read(gamePersistenceServiceProvider);
   SoundService get _sound => ref.read(soundServiceProvider);
@@ -36,6 +45,7 @@ class GameController extends Notifier<GameState?> {
       (previous, next) => _sound.enabled = next.soundEnabled,
       fireImmediately: true,
     );
+    ref.onDispose(() => _saveDebounce?.cancel());
     return null;
   }
 
@@ -72,14 +82,34 @@ class GameController extends Notifier<GameState?> {
   Future<void> abandonGame() async {
     state = null;
     await _persistence.clear();
-    ref.invalidate(savedGameProvider);
+    // savedGameProvider watches this controller's state directly and falls
+    // back to persistence.load() only while it's null (see
+    // saved_game_provider.dart), so clearing state already made it
+    // re-check - now against the just-cleared store - with no invalidate
+    // needed.
   }
 
-  /// Forces an immediate write of the current state, bypassing the timer
-  /// tick's throttling. Used when the player is about to leave the game
-  /// (back navigation, app backgrounded/closed) so nothing since the last
-  /// throttled save is lost.
-  Future<void> saveNow() => _persist();
+  /// Forces an immediate write of the current state, bypassing (and
+  /// cancelling) any pending debounced save. Used when the player is about
+  /// to leave the game (back navigation, app backgrounded/closed) so
+  /// nothing since the last debounced save is lost.
+  Future<void> saveNow() {
+    _saveDebounce?.cancel();
+    _saveDebounce = null;
+    return _persist();
+  }
+
+  /// Schedules a debounced save ([_saveDebounceDelay] after the last call),
+  /// for routine edits where losing the last fraction of a second of
+  /// progress to an app kill is an acceptable trade for not hitting disk on
+  /// every keystroke. Game-ending transitions call [saveNow] instead.
+  void _schedulePersist() {
+    _saveDebounce?.cancel();
+    _saveDebounce = Timer(_saveDebounceDelay, () {
+      _saveDebounce = null;
+      _persist();
+    });
+  }
 
   /// True once [s] shouldn't allow any gameplay action to mutate the board,
   /// notes, hint count or undo/redo stacks: paused, won, or lost. Every
@@ -106,7 +136,7 @@ class GameController extends Notifier<GameState?> {
     final s = state;
     if (s == null || s.isWon || s.isGameOver) return;
     state = s.copyWith(isPaused: !s.isPaused);
-    _persist();
+    _schedulePersist();
   }
 
   void tick() {
@@ -145,7 +175,7 @@ class GameController extends Notifier<GameState?> {
       final newBoard = s.board.setCell(row, col, cell.copyWith(notes: newNotes));
       state = _withHistory(s, newBoard);
       _sound.tap();
-      _persist();
+      _schedulePersist();
       return;
     }
 
@@ -176,7 +206,14 @@ class GameController extends Notifier<GameState?> {
     }
 
     state = newState;
-    _persist();
+    // A win needs to survive an app kill immediately after it happens (see
+    // the isWon-persistence fix), so flush right away instead of debouncing
+    // - every other routine entry can wait and be coalesced.
+    if (newState.isWon) {
+      saveNow();
+    } else {
+      _schedulePersist();
+    }
   }
 
   void eraseSelected() {
@@ -191,7 +228,7 @@ class GameController extends Notifier<GameState?> {
     final newCell = cell.isEmpty ? cell.copyWith(clearNotes: true) : cell.copyWith(value: 0);
     final newBoard = s.board.setCell(row, col, newCell);
     state = _withHistory(s, newBoard);
-    _persist();
+    _schedulePersist();
   }
 
   void undo() {
@@ -203,7 +240,7 @@ class GameController extends Notifier<GameState?> {
       undoStack: s.undoStack.sublist(0, s.undoStack.length - 1),
       redoStack: [...s.redoStack, s.board],
     );
-    _persist();
+    _schedulePersist();
   }
 
   void redo() {
@@ -215,7 +252,7 @@ class GameController extends Notifier<GameState?> {
       redoStack: s.redoStack.sublist(0, s.redoStack.length - 1),
       undoStack: [...s.undoStack, s.board],
     );
-    _persist();
+    _schedulePersist();
   }
 
   /// Fills the pencil-mark notes of every empty cell with its currently
@@ -234,7 +271,7 @@ class GameController extends Notifier<GameState?> {
     }
     state = _withHistory(s, newBoard);
     _sound.tap();
-    _persist();
+    _schedulePersist();
   }
 
   /// Places the next logically derivable number (see [HintEngine]) and
@@ -288,7 +325,12 @@ class GameController extends Notifier<GameState?> {
     }
 
     state = newState;
-    await _persist();
+    // See inputNumber: a win is flushed immediately rather than debounced.
+    if (newState.isWon) {
+      await saveNow();
+    } else {
+      _schedulePersist();
+    }
     return step;
   }
 
@@ -363,8 +405,10 @@ class GameController extends Notifier<GameState?> {
   Future<void> _persist() async {
     final s = state;
     if (s == null) return;
+    // No need to invalidate savedGameProvider here - it watches this
+    // controller's state directly (see saved_game_provider.dart), so Home
+    // already sees every change with no extra disk read.
     await _persistence.save(s);
-    ref.invalidate(savedGameProvider);
   }
 }
 

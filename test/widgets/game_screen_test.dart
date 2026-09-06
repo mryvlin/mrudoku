@@ -65,6 +65,10 @@ void main() {
       container.read(gameControllerProvider)!.board.cellAt(pos.$1, pos.$2).value,
       correctValue,
     );
+
+    // Flush the debounced autosave timer inputNumber scheduled, so the test
+    // doesn't end with a pending Timer.
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgets('notes mode enters a pencil mark instead of a value', (tester) async {
@@ -83,6 +87,10 @@ void main() {
     final cell = container.read(gameControllerProvider)!.board.cellAt(pos.$1, pos.$2);
     expect(cell.value, 0);
     expect(cell.notes, contains(candidate));
+
+    // Flush the debounced autosave timer inputNumber scheduled, so the test
+    // doesn't end with a pending Timer.
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgets('undo button reverts the last entered value', (tester) async {
@@ -104,5 +112,9 @@ void main() {
     await tester.pump();
 
     expect(container.read(gameControllerProvider)!.board.cellAt(pos.$1, pos.$2).value, 0);
+
+    // Flush the debounced autosave timers inputNumber/undo scheduled, so
+    // the test doesn't end with a pending Timer.
+    await tester.pump(const Duration(seconds: 1));
   });
 }
