@@ -109,8 +109,21 @@ class GameController extends Notifier<GameState?> {
     if (cell.isGiven) return;
 
     if (s.notesMode) {
+      final hasNote = cell.notes.contains(value);
+      // A note can always be cleared, but a new one may only be added if
+      // it's still a legal candidate for the cell (not already placed in
+      // its row/column/box) - notes for a digit that's plainly ruled out
+      // aren't useful and would just clutter the cell.
+      if (!hasNote && !Candidates.forCell(s.board, row, col).contains(value)) {
+        _sound.error();
+        return;
+      }
       final newNotes = {...cell.notes};
-      if (!newNotes.remove(value)) newNotes.add(value);
+      if (hasNote) {
+        newNotes.remove(value);
+      } else {
+        newNotes.add(value);
+      }
       final newBoard = s.board.setCell(row, col, cell.copyWith(notes: newNotes));
       state = _withHistory(s, newBoard);
       _sound.tap();
@@ -122,7 +135,10 @@ class GameController extends Notifier<GameState?> {
 
     final isCorrect = s.solution.cellAt(row, col).value == value;
     final placedBoard = s.board.setCell(row, col, cell.copyWith(value: value, clearNotes: true));
-    final newBoard = _stripNoteFromPeers(placedBoard, row, col, value);
+    // Only strip the matching note from peers once the entry is confirmed
+    // correct - a wrong guess shouldn't erase pencil marks the player
+    // still needs elsewhere.
+    final newBoard = isCorrect ? _stripNoteFromPeers(placedBoard, row, col, value) : placedBoard;
 
     var newState = _withHistory(s, newBoard).copyWith(
       mistakes: s.mistakes + (isCorrect ? 0 : 1),

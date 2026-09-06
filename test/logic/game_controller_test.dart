@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mrsudoku/logic/candidates.dart';
 import 'package:mrsudoku/logic/providers.dart';
 import 'package:mrsudoku/logic/validator.dart';
+import 'package:mrsudoku/models/board.dart';
 import 'package:mrsudoku/models/difficulty.dart';
 import 'package:mrsudoku/models/game_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +15,33 @@ import 'package:shared_preferences/shared_preferences.dart';
     }
   }
   throw StateError('no empty cell found');
+}
+
+/// A near-empty board with a single given (4 at (0, 2)) so digit 4 is ruled
+/// out as a note anywhere else in row 0, while (0, 0) and (0, 1) stay open
+/// with several legal candidates (including 3 and 5) for the notes tests
+/// below. The paired solution puts 5 at (0, 0) - the rest of the solution
+/// grid is unused filler, just kept internally consistent.
+GameState _fixtureState() {
+  final values = List.generate(9, (_) => List.filled(9, 0));
+  values[0][2] = 4;
+  const solutionValues = [
+    [5, 3, 4, 6, 7, 8, 9, 1, 2],
+    [6, 7, 2, 1, 9, 5, 3, 4, 8],
+    [1, 9, 8, 3, 4, 2, 5, 6, 7],
+    [8, 5, 9, 7, 6, 1, 4, 2, 3],
+    [4, 2, 6, 8, 5, 3, 7, 9, 1],
+    [7, 1, 3, 9, 2, 4, 8, 5, 6],
+    [9, 6, 1, 5, 3, 7, 2, 8, 4],
+    [2, 8, 7, 4, 1, 9, 6, 3, 5],
+    [3, 4, 5, 2, 8, 6, 1, 7, 9],
+  ];
+
+  return GameState(
+    board: Board.fromValues(values),
+    solution: Board.fromValues(solutionValues),
+    difficulty: Difficulty.easy,
+  );
 }
 
 void main() {
@@ -61,14 +90,65 @@ void main() {
 
   test('notes mode records a pencil mark instead of a value', () {
     final pos = _firstEmptyCell(state());
+    final candidate = Candidates.forCell(state().board, pos.$1, pos.$2).first;
     controller.selectCell(pos.$1, pos.$2);
     controller.toggleNotesMode();
 
-    controller.inputNumber(4);
+    controller.inputNumber(candidate);
 
     final cell = state().board.cellAt(pos.$1, pos.$2);
     expect(cell.value, 0);
-    expect(cell.notes, contains(4));
+    expect(cell.notes, contains(candidate));
+  });
+
+  test('notes mode rejects a note for a digit already ruled out for the cell', () {
+    controller.restore(_fixtureState());
+    controller.selectCell(0, 1);
+    controller.toggleNotesMode();
+
+    controller.inputNumber(4); // already given at (0, 2), same row
+
+    expect(state().board.cellAt(0, 1).notes, isEmpty);
+  });
+
+  test('notes mode allows a note for a digit that is still a legal candidate', () {
+    controller.restore(_fixtureState());
+    controller.selectCell(0, 1);
+    controller.toggleNotesMode();
+
+    controller.inputNumber(3);
+
+    expect(state().board.cellAt(0, 1).notes, contains(3));
+  });
+
+  test('a wrong number entry does not strip a matching note from a peer cell', () {
+    controller.restore(_fixtureState());
+
+    controller.selectCell(0, 1);
+    controller.toggleNotesMode();
+    controller.inputNumber(3); // note in a peer of (0, 0)
+    controller.toggleNotesMode();
+
+    controller.selectCell(0, 0); // solution here is 5, so 3 is a wrong guess
+    controller.inputNumber(3);
+
+    expect(state().mistakes, 1);
+    expect(state().board.cellAt(0, 1).notes, contains(3));
+  });
+
+  test('a correct number entry does strip the matching note from peer cells', () {
+    controller.restore(_fixtureState());
+
+    controller.selectCell(0, 1);
+    controller.toggleNotesMode();
+    controller.inputNumber(5); // note in a peer of (0, 0), for the same digit
+    controller.toggleNotesMode();
+
+    controller.selectCell(0, 0);
+    controller.inputNumber(5); // matches the solution
+
+    expect(state().mistakes, 0);
+    expect(state().board.cellAt(0, 1).notes, isNot(contains(5)));
   });
 
   test('undo reverts the last change and redo re-applies it', () {

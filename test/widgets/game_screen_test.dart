@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mrsudoku/logic/candidates.dart';
 import 'package:mrsudoku/logic/providers.dart';
 import 'package:mrsudoku/models/difficulty.dart';
 import 'package:mrsudoku/models/game_state.dart';
@@ -63,17 +64,19 @@ void main() {
   testWidgets('notes mode enters a pencil mark instead of a value', (tester) async {
     final container = await _startedContainer(tester);
     final pos = _firstEmptyCell(container.read(gameControllerProvider)!);
+    final candidate =
+        Candidates.forCell(container.read(gameControllerProvider)!.board, pos.$1, pos.$2).first;
 
     await tester.tap(find.byKey(ValueKey('cell-${pos.$1}-${pos.$2}')));
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey('toolbar-notes')));
     await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('numpad-5')));
+    await tester.tap(find.byKey(ValueKey('numpad-$candidate')));
     await tester.pump();
 
     final cell = container.read(gameControllerProvider)!.board.cellAt(pos.$1, pos.$2);
     expect(cell.value, 0);
-    expect(cell.notes, contains(5));
+    expect(cell.notes, contains(candidate));
   });
 
   testWidgets('undo button reverts the last entered value', (tester) async {
