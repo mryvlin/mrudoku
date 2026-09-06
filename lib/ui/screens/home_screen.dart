@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../logic/providers.dart';
 import '../../models/difficulty.dart';
 import '../../models/game_state.dart';
 import '../../models/settings.dart';
+import '../difficulty_labels.dart';
 import '../format_duration.dart';
 import '../widgets/leaderboard_widget.dart';
 import 'game_screen.dart';
@@ -22,13 +24,14 @@ class HomeScreen extends ConsumerWidget {
     final savedGame = ref.watch(savedGameProvider);
     final settings = ref.watch(settingsControllerProvider);
     final leaderboard = ref.watch(leaderboardControllerProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('mrsudoku'),
         actions: [
           IconButton(
-            tooltip: 'Einstellungen',
+            tooltip: l10n.settings,
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -58,15 +61,17 @@ class HomeScreen extends ConsumerWidget {
                               onPressed: () => _continueGame(context, ref, saved),
                               icon: const Icon(Icons.play_arrow),
                               label: Text(
-                                'Fortsetzen - ${saved.difficulty.label} '
-                                '(${formatDuration(saved.elapsedSeconds)})',
+                                l10n.resumeButtonLabel(
+                                  saved.difficulty.label(l10n),
+                                  formatDuration(saved.elapsedSeconds),
+                                ),
                               ),
                             ),
                           ),
                     loading: () => const SizedBox.shrink(),
                     error: (_, _) => const SizedBox.shrink(),
                   ),
-                  Text('Neues Spiel', style: Theme.of(context).textTheme.titleMedium),
+                  Text(l10n.newGame, style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 12,
@@ -76,7 +81,7 @@ class HomeScreen extends ConsumerWidget {
                       for (final difficulty in Difficulty.values)
                         OutlinedButton(
                           onPressed: () => _startNewGame(context, ref, difficulty, settings),
-                          child: Text(difficulty.label),
+                          child: Text(difficulty.label(l10n)),
                         ),
                     ],
                   ),

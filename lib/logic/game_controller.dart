@@ -220,39 +220,38 @@ class GameController extends Notifier<GameState?> {
   }
 
   /// Places the next logically derivable number (see [HintEngine]) and
-  /// returns a short explanation for the UI to display, or `null` if no
-  /// hint could be given (no hints left, or game finished/paused).
-  Future<String?> useHint() async {
+  /// returns the [HintStep] taken - the UI (see `ui/hint_text.dart`) turns
+  /// this into a localized explanation - or `null` if no hint could be given
+  /// (no hints left, or game finished/paused).
+  Future<HintStep?> useHint() async {
     final s = state;
     if (s == null || s.isGameOver || s.isWon || s.hintsRemaining <= 0) return null;
 
-    final step = HintEngine.nextLogicalStep(s.board);
-    late final int row, col, value;
-    late final String explanation;
-
-    if (step != null) {
-      row = step.row;
-      col = step.col;
-      value = step.value;
-      explanation = '${step.technique.label}: ${step.explanation}';
+    final logicalStep = HintEngine.nextLogicalStep(s.board);
+    final HintStep step;
+    if (logicalStep != null) {
+      step = logicalStep;
     } else {
       final pos = _firstEmptyCell(s.board);
       if (pos == null) return null;
-      row = pos.$1;
-      col = pos.$2;
-      value = s.solution.cellAt(row, col).value;
-      explanation = 'Keine einfache Logik-Regel greift hier - die Lösung für diese Zelle wird '
-          'direkt verraten.';
+      // No implemented technique applies: reveal the solution directly.
+      // SolvingTechnique.backtracking marks this fallback for the UI.
+      step = HintStep(
+        row: pos.$1,
+        col: pos.$2,
+        value: s.solution.cellAt(pos.$1, pos.$2).value,
+        technique: SolvingTechnique.backtracking,
+      );
     }
 
-    final cell = s.board.cellAt(row, col);
-    final placedBoard = s.board.setCell(row, col, cell.copyWith(value: value, clearNotes: true));
-    final newBoard = _stripNoteFromPeers(placedBoard, row, col, value);
+    final cell = s.board.cellAt(step.row, step.col);
+    final placedBoard = s.board.setCell(step.row, step.col, cell.copyWith(value: step.value, clearNotes: true));
+    final newBoard = _stripNoteFromPeers(placedBoard, step.row, step.col, step.value);
 
     var newState = _withHistory(s, newBoard).copyWith(
       hintsUsed: s.hintsUsed + 1,
-      selectedRow: row,
-      selectedCol: col,
+      selectedRow: step.row,
+      selectedCol: step.col,
     );
 
     if (Validator.isSolved(newBoard)) {
@@ -263,7 +262,7 @@ class GameController extends Notifier<GameState?> {
 
     state = newState;
     await _persist();
-    return explanation;
+    return step;
   }
 
   void _recordWin(Difficulty difficulty, int elapsedSeconds) {

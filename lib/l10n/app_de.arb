@@ -1,0 +1,204 @@
+{
+  "@@locale": "de",
+
+  "settings": "Einstellungen",
+  "@settings": {"description": "Settings screen title and the gear icon's tooltip."},
+
+  "resume": "Fortsetzen",
+  "@resume": {"description": "Generic 'resume' word, used both as the pause-toggle tooltip and inside resumeButtonLabel."},
+
+  "resumeButtonLabel": "Fortsetzen - {difficulty} ({time})",
+  "@resumeButtonLabel": {
+    "description": "Home screen button offering to continue a saved game.",
+    "placeholders": {
+      "difficulty": {"type": "String"},
+      "time": {"type": "String"}
+    }
+  },
+
+  "newGame": "Neues Spiel",
+  "@newGame": {"description": "Heading above the difficulty buttons on the Home screen."},
+
+  "pause": "Pausieren",
+  "@pause": {"description": "Tooltip for the pause button while the game is running."},
+
+  "gameTitle": "Sudoku - {difficulty}",
+  "@gameTitle": {
+    "description": "Game screen AppBar title.",
+    "placeholders": {
+      "difficulty": {"type": "String"}
+    }
+  },
+
+  "wonTitle": "Geschafft! 🎉",
+  "@wonTitle": {"description": "Title of the dialog shown when the puzzle is solved."},
+
+  "wonMessage": "Du hast das Rätsel in {time} gelöst.",
+  "@wonMessage": {
+    "description": "Body of the win dialog.",
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+
+  "gameOverTitle": "Game Over",
+  "@gameOverTitle": {"description": "Title of the dialog shown when the mistake limit is reached."},
+
+  "gameOverMessage": "Du hast das Fehlerlimit erreicht.",
+  "@gameOverMessage": {"description": "Body of the game-over dialog."},
+
+  "backToMenu": "Zum Menü",
+  "@backToMenu": {"description": "Button on the win/game-over dialogs that returns to the Home screen."},
+
+  "paused": "Pausiert",
+  "@paused": {"description": "Label shown on the paused-game overlay."},
+
+  "errorLimitTitle": "Fehlerlimit aktiv",
+  "@errorLimitTitle": {"description": "Settings switch title."},
+  "errorLimitSubtitle": "Spiel endet nach zu vielen Fehlern",
+  "@errorLimitSubtitle": {"description": "Settings switch subtitle."},
+
+  "maxMistakesTitle": "Maximale Fehler",
+  "@maxMistakesTitle": {"description": "Label above the max-mistakes slider."},
+
+  "showErrorsTitle": "Falsche Zahlen anzeigen",
+  "@showErrorsTitle": {"description": "Settings switch title."},
+  "showErrorsSubtitle": "Markiert falsch eingetragene Zahlen farblich",
+  "@showErrorsSubtitle": {"description": "Settings switch subtitle."},
+
+  "highlightsTitle": "Hervorhebungen",
+  "@highlightsTitle": {"description": "Settings switch title."},
+  "highlightsSubtitle": "Zeile/Spalte/Box und gleiche Zahlen farblich markieren",
+  "@highlightsSubtitle": {"description": "Settings switch subtitle."},
+
+  "highlightColorTitle": "Hervorhebungsfarbe",
+  "@highlightColorTitle": {"description": "Title above the highlight-color swatch picker."},
+
+  "soundTitle": "Sound",
+  "@soundTitle": {"description": "Settings switch title."},
+  "soundSubtitle": "Feedback-Töne und Vibration bei Eingaben",
+  "@soundSubtitle": {"description": "Settings switch subtitle."},
+
+  "designHeading": "Design",
+  "@designHeading": {"description": "Heading above the theme radio group."},
+  "themeSystem": "System",
+  "@themeSystem": {"description": "Theme option: follow the OS setting."},
+  "themeLight": "Hell",
+  "@themeLight": {"description": "Theme option: always light."},
+  "themeDark": "Dunkel",
+  "@themeDark": {"description": "Theme option: always dark."},
+
+  "languageHeading": "Sprache",
+  "@languageHeading": {"description": "Heading above the language radio group."},
+  "languageSystem": "System",
+  "@languageSystem": {"description": "Language option: follow the OS setting."},
+  "languageGerman": "Deutsch",
+  "@languageGerman": {"description": "Language option: always German."},
+  "languageEnglish": "English",
+  "@languageEnglish": {"description": "Language option: always English."},
+
+  "highlightColorRed": "Rot",
+  "@highlightColorRed": {"description": "Highlight color name."},
+  "highlightColorOrange": "Orange",
+  "@highlightColorOrange": {"description": "Highlight color name."},
+  "highlightColorGreen": "Grün",
+  "@highlightColorGreen": {"description": "Highlight color name."},
+  "highlightColorBlue": "Blau",
+  "@highlightColorBlue": {"description": "Highlight color name."},
+  "highlightColorPurple": "Lila",
+  "@highlightColorPurple": {"description": "Highlight color name."},
+  "highlightColorTeal": "Türkis",
+  "@highlightColorTeal": {"description": "Highlight color name."},
+
+  "difficultyEasy": "Einfach",
+  "@difficultyEasy": {"description": "Difficulty level name."},
+  "difficultyMedium": "Mittel",
+  "@difficultyMedium": {"description": "Difficulty level name."},
+  "difficultyHard": "Schwer",
+  "@difficultyHard": {"description": "Difficulty level name."},
+  "difficultyExpert": "Experte",
+  "@difficultyExpert": {"description": "Difficulty level name."},
+
+  "undoLabel": "Rückgängig",
+  "@undoLabel": {"description": "Toolbar button label."},
+  "redoLabel": "Wiederholen",
+  "@redoLabel": {"description": "Toolbar button label."},
+  "notesLabel": "Notizen",
+  "@notesLabel": {"description": "Toolbar button label (notes-mode toggle)."},
+  "autoNotesLabel": "Auto-Notizen",
+  "@autoNotesLabel": {"description": "Toolbar button label (auto-fill notes)."},
+  "hintLabel": "Hinweis ({count})",
+  "@hintLabel": {
+    "description": "Toolbar button label showing remaining hints.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "leaderboardTitle": "Bestenliste",
+  "@leaderboardTitle": {"description": "Heading of the best-times card on the Home screen."},
+
+  "hintNakedSingle": "Zeile {row}, Spalte {col} hat nur einen möglichen Kandidaten: {value}.",
+  "@hintNakedSingle": {
+    "description": "Hint explanation for a naked single.",
+    "placeholders": {
+      "row": {"type": "int"},
+      "col": {"type": "int"},
+      "value": {"type": "int"}
+    }
+  },
+
+  "hintHiddenSingle": "In {unit} kann die {value} nur noch in Zeile {row}, Spalte {col} stehen.",
+  "@hintHiddenSingle": {
+    "description": "Hint explanation for a hidden single. {unit} is one of unitRow/unitColumn/unitBox, already formatted.",
+    "placeholders": {
+      "unit": {"type": "String"},
+      "value": {"type": "int"},
+      "row": {"type": "int"},
+      "col": {"type": "int"}
+    }
+  },
+
+  "unitRow": "Zeile {n}",
+  "@unitRow": {
+    "description": "A row, by 1-based index, used inside hintHiddenSingle.",
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "unitColumn": "Spalte {n}",
+  "@unitColumn": {
+    "description": "A column, by 1-based index, used inside hintHiddenSingle.",
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "unitBox": "Box {n}",
+  "@unitBox": {
+    "description": "A 3x3 box, by 1-based index, used inside hintHiddenSingle.",
+    "placeholders": {"n": {"type": "int"}}
+  },
+
+  "leadInPairElimination": "Nach Ausschluss durch ein Paar-Muster (Naked Pair / Pointing Pair / Box-Line Reduction):",
+  "@leadInPairElimination": {"description": "Lead-in sentence prepended to the base hint explanation."},
+  "leadInHiddenPair": "Nach Ausschluss durch ein verstecktes Paar:",
+  "@leadInHiddenPair": {"description": "Lead-in sentence prepended to the base hint explanation."},
+  "leadInNakedTriple": "Nach Ausschluss durch ein Kandidaten-Trio:",
+  "@leadInNakedTriple": {"description": "Lead-in sentence prepended to the base hint explanation."},
+  "leadInXWing": "Nach Ausschluss durch ein X-Wing-Muster:",
+  "@leadInXWing": {"description": "Lead-in sentence prepended to the base hint explanation."},
+
+  "techniqueNakedSingle": "Naked Single",
+  "@techniqueNakedSingle": {"description": "Solving technique name shown before the hint explanation."},
+  "techniqueHiddenSingle": "Hidden Single",
+  "@techniqueHiddenSingle": {"description": "Solving technique name shown before the hint explanation."},
+  "techniquePairElimination": "Kandidaten-Ausschluss (Naked Pair / Pointing Pair / Box-Line Reduction)",
+  "@techniquePairElimination": {"description": "Solving technique name shown before the hint explanation."},
+  "techniqueHiddenPair": "Verstecktes Paar (Hidden Pair)",
+  "@techniqueHiddenPair": {"description": "Solving technique name shown before the hint explanation."},
+  "techniqueNakedTriple": "Kandidaten-Trio (Naked Triple)",
+  "@techniqueNakedTriple": {"description": "Solving technique name shown before the hint explanation."},
+  "techniqueXWing": "X-Wing",
+  "@techniqueXWing": {"description": "Solving technique name shown before the hint explanation."},
+  "techniqueBacktracking": "Rückwärtssuche (Ausprobieren)",
+  "@techniqueBacktracking": {"description": "Solving technique name for the direct-reveal fallback hint."},
+
+  "hintDirectReveal": "Keine einfache Logik-Regel greift hier - die Lösung für diese Zelle wird direkt verraten.",
+  "@hintDirectReveal": {"description": "Hint message shown when no logical technique applies and the solution is revealed directly."}
+}

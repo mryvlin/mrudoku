@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../logic/providers.dart';
 import '../../models/settings.dart';
 import '../highlight_colors.dart';
 
 /// Settings page: error limit on/off (with the limit itself), whether wrong
-/// entries are visually marked, highlighting on/off, sound, and theme.
+/// entries are visually marked, highlighting on/off, sound, theme and
+/// language.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -14,20 +16,21 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsControllerProvider);
     final controller = ref.read(settingsControllerProvider.notifier);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Einstellungen')),
+      appBar: AppBar(title: Text(l10n.settings)),
       body: ListView(
         children: [
           SwitchListTile(
-            title: const Text('Fehlerlimit aktiv'),
-            subtitle: const Text('Spiel endet nach zu vielen Fehlern'),
+            title: Text(l10n.errorLimitTitle),
+            subtitle: Text(l10n.errorLimitSubtitle),
             value: settings.errorLimitEnabled,
             onChanged: controller.setErrorLimitEnabled,
           ),
           if (settings.errorLimitEnabled)
             ListTile(
-              title: const Text('Maximale Fehler'),
+              title: Text(l10n.maxMistakesTitle),
               subtitle: Slider(
                 value: settings.maxMistakes.toDouble(),
                 min: 1,
@@ -38,19 +41,19 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           SwitchListTile(
-            title: const Text('Falsche Zahlen anzeigen'),
-            subtitle: const Text('Markiert falsch eingetragene Zahlen farblich'),
+            title: Text(l10n.showErrorsTitle),
+            subtitle: Text(l10n.showErrorsSubtitle),
             value: settings.showErrors,
             onChanged: controller.setShowErrors,
           ),
           SwitchListTile(
-            title: const Text('Hervorhebungen'),
-            subtitle: const Text('Zeile/Spalte/Box und gleiche Zahlen farblich markieren'),
+            title: Text(l10n.highlightsTitle),
+            subtitle: Text(l10n.highlightsSubtitle),
             value: settings.highlightEnabled,
             onChanged: controller.setHighlightEnabled,
           ),
           ListTile(
-            title: const Text('Hervorhebungsfarbe'),
+            title: Text(l10n.highlightColorTitle),
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Wrap(
@@ -67,24 +70,40 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           SwitchListTile(
-            title: const Text('Sound'),
-            subtitle: const Text('Feedback-Töne und Vibration bei Eingaben'),
+            title: Text(l10n.soundTitle),
+            subtitle: Text(l10n.soundSubtitle),
             value: settings.soundEnabled,
             onChanged: controller.setSoundEnabled,
           ),
           const Divider(),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text('Design', style: Theme.of(context).textTheme.titleMedium),
+            child: Text(l10n.designHeading, style: Theme.of(context).textTheme.titleMedium),
           ),
           RadioGroup<AppThemeMode>(
             groupValue: settings.themeMode,
             onChanged: (value) => controller.setThemeMode(value!),
-            child: const Column(
+            child: Column(
               children: [
-                RadioListTile<AppThemeMode>(title: Text('System'), value: AppThemeMode.system),
-                RadioListTile<AppThemeMode>(title: Text('Hell'), value: AppThemeMode.light),
-                RadioListTile<AppThemeMode>(title: Text('Dunkel'), value: AppThemeMode.dark),
+                RadioListTile<AppThemeMode>(title: Text(l10n.themeSystem), value: AppThemeMode.system),
+                RadioListTile<AppThemeMode>(title: Text(l10n.themeLight), value: AppThemeMode.light),
+                RadioListTile<AppThemeMode>(title: Text(l10n.themeDark), value: AppThemeMode.dark),
+              ],
+            ),
+          ),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(l10n.languageHeading, style: Theme.of(context).textTheme.titleMedium),
+          ),
+          RadioGroup<AppLocale>(
+            groupValue: settings.locale,
+            onChanged: (value) => controller.setLocale(value!),
+            child: Column(
+              children: [
+                RadioListTile<AppLocale>(title: Text(l10n.languageSystem), value: AppLocale.system),
+                RadioListTile<AppLocale>(title: Text(l10n.languageGerman), value: AppLocale.de),
+                RadioListTile<AppLocale>(title: Text(l10n.languageEnglish), value: AppLocale.en),
               ],
             ),
           ),
@@ -105,8 +124,9 @@ class _HighlightColorSwatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Tooltip(
-      message: color.label,
+      message: color.label(l10n),
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),

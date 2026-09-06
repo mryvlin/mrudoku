@@ -17,65 +17,44 @@ enum SolvingTechnique {
 
 extension SolvingTechniqueX on SolvingTechnique {
   int get rank => index;
-
-  String get label {
-    switch (this) {
-      case SolvingTechnique.nakedSingle:
-        return 'Naked Single';
-      case SolvingTechnique.hiddenSingle:
-        return 'Hidden Single';
-      case SolvingTechnique.pairElimination:
-        return 'Kandidaten-Ausschluss (Naked Pair / Pointing Pair / Box-Line Reduction)';
-      case SolvingTechnique.hiddenPair:
-        return 'Verstecktes Paar (Hidden Pair)';
-      case SolvingTechnique.nakedTriple:
-        return 'Kandidaten-Trio (Naked Triple)';
-      case SolvingTechnique.xWing:
-        return 'X-Wing';
-      case SolvingTechnique.backtracking:
-        return 'Rückwärtssuche (Ausprobieren)';
-    }
-  }
-
-  /// Short lead-in explaining that a technique first had to narrow the
-  /// candidates down before the placed value became forced. Only meaningful
-  /// for the elimination-only tiers between [hiddenSingle] and
-  /// [backtracking].
-  String get _eliminationLeadIn {
-    switch (this) {
-      case SolvingTechnique.pairElimination:
-        return 'Nach Ausschluss durch ein Paar-Muster '
-            '(Naked Pair / Pointing Pair / Box-Line Reduction):';
-      case SolvingTechnique.hiddenPair:
-        return 'Nach Ausschluss durch ein verstecktes Paar:';
-      case SolvingTechnique.nakedTriple:
-        return 'Nach Ausschluss durch ein Kandidaten-Trio:';
-      case SolvingTechnique.xWing:
-        return 'Nach Ausschluss durch ein X-Wing-Muster:';
-      case SolvingTechnique.nakedSingle:
-      case SolvingTechnique.hiddenSingle:
-      case SolvingTechnique.backtracking:
-        return '';
-    }
-  }
 }
 
+/// Which base rule actually placed the value - even when [HintStep.technique]
+/// reports an elimination tier (e.g. [SolvingTechnique.pairElimination]),
+/// the value is always placed by a naked or hidden single once that tier has
+/// narrowed the candidates down enough.
+enum SingleKind { naked, hidden }
+
+/// The unit type (row, column or box) whose analysis revealed a hidden
+/// single - only meaningful when [HintStep.singleKind] is
+/// [SingleKind.hidden]. The UI uses this together with [HintStep.row]/`col`
+/// to name the unit (its 1-based index is fully derivable from row/col).
+enum HintUnitType { row, column, box }
+
 /// One logically derived step: place [value] at (row, col) because of
-/// [technique], with a short human-readable [explanation] for the hint UI.
+/// [technique]. This is deliberately just structured data with no
+/// human-readable text - see `ui/hint_text.dart` for the localized
+/// explanation, since text/localization doesn't belong in this pure-Dart
+/// logic layer.
 class HintStep {
   final int row;
   final int col;
   final int value;
   final SolvingTechnique technique;
-  final String explanation;
+  final SingleKind singleKind;
+  final HintUnitType? hiddenUnit;
 
   const HintStep({
     required this.row,
     required this.col,
     required this.value,
     required this.technique,
-    required this.explanation,
-  });
+    this.singleKind = SingleKind.naked,
+    this.hiddenUnit,
+  }) : assert(
+          hiddenUnit == null || singleKind == SingleKind.hidden,
+          'hiddenUnit is only meaningful when singleKind is hidden',
+        );
 }
 
 /// Logical (non-brute-force) solving engine. Powers both the in-game hint
@@ -128,7 +107,6 @@ class HintEngine {
           col: nakedAfter.col,
           value: nakedAfter.value,
           technique: tier,
-          explanation: '${tier._eliminationLeadIn} ${nakedAfter.explanation}',
         );
       }
       final hiddenAfter = _findHiddenSingle(board, candidates: cands);
@@ -138,7 +116,8 @@ class HintEngine {
           col: hiddenAfter.col,
           value: hiddenAfter.value,
           technique: tier,
-          explanation: '${tier._eliminationLeadIn} ${hiddenAfter.explanation}',
+          singleKind: SingleKind.hidden,
+          hiddenUnit: hiddenAfter.hiddenUnit,
         );
       }
     }
@@ -158,8 +137,6 @@ class HintEngine {
             col: c,
             value: options.first,
             technique: SolvingTechnique.nakedSingle,
-            explanation: 'Zeile ${r + 1}, Spalte ${c + 1} hat nur einen möglichen Kandidaten: '
-                '${options.first}.',
           );
         }
       }
@@ -170,7 +147,7 @@ class HintEngine {
   static HintStep? _findHiddenSingle(Board board, {List<List<Set<int>>>? candidates}) {
     final cands = candidates ?? Candidates.forBoard(board);
 
-    HintStep? searchUnit(List<List<int>> unit, String unitLabel) {
+    HintStep? searchUnit(List<List<int>> unit, HintUnitType unitType) {
       for (var value = 1; value <= kBoardSize; value++) {
         final cellsWithValue = unit
             .where((pos) => board.cellAt(pos[0], pos[1]).isEmpty && cands[pos[0]][pos[1]].contains(value))
@@ -182,8 +159,8 @@ class HintEngine {
             col: c,
             value: value,
             technique: SolvingTechnique.hiddenSingle,
-            explanation: 'In $unitLabel kann die $value nur noch in Zeile ${r + 1}, '
-                'Spalte ${c + 1} stehen.',
+            singleKind: SingleKind.hidden,
+            hiddenUnit: unitType,
           );
         }
       }
@@ -191,16 +168,16 @@ class HintEngine {
     }
 
     for (var r = 0; r < kBoardSize; r++) {
-      final result = searchUnit([for (var c = 0; c < kBoardSize; c++) [r, c]], 'Zeile ${r + 1}');
+      final result = searchUnit([for (var c = 0; c < kBoardSize; c++) [r, c]], HintUnitType.row);
       if (result != null) return result;
     }
     for (var c = 0; c < kBoardSize; c++) {
-      final result = searchUnit([for (var r = 0; r < kBoardSize; r++) [r, c]], 'Spalte ${c + 1}');
+      final result = searchUnit([for (var r = 0; r < kBoardSize; r++) [r, c]], HintUnitType.column);
       if (result != null) return result;
     }
     for (var br = 0; br < kBoxSize; br++) {
       for (var bc = 0; bc < kBoxSize; bc++) {
-        final result = searchUnit(_boxPositions(br, bc), 'Box ${br * kBoxSize + bc + 1}');
+        final result = searchUnit(_boxPositions(br, bc), HintUnitType.box);
         if (result != null) return result;
       }
     }

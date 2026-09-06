@@ -215,9 +215,9 @@ void main() {
   test('a hint reduces the remaining hint count and places a correct value', () async {
     final before = state().hintsRemaining;
 
-    final explanation = await controller.useHint();
+    final step = await controller.useHint();
 
-    expect(explanation, isNotNull);
+    expect(step, isNotNull);
     expect(state().hintsRemaining, before - 1);
   });
 

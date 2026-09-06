@@ -1,0 +1,83 @@
+{
+  "@@locale": "en",
+
+  "settings": "Settings",
+  "resume": "Resume",
+  "resumeButtonLabel": "Resume - {difficulty} ({time})",
+  "newGame": "New Game",
+  "pause": "Pause",
+  "gameTitle": "Sudoku - {difficulty}",
+  "wonTitle": "Solved! 🎉",
+  "wonMessage": "You solved the puzzle in {time}.",
+  "gameOverTitle": "Game Over",
+  "gameOverMessage": "You reached the mistake limit.",
+  "backToMenu": "Back to Menu",
+  "paused": "Paused",
+
+  "errorLimitTitle": "Mistake limit active",
+  "errorLimitSubtitle": "Game ends after too many mistakes",
+
+  "maxMistakesTitle": "Maximum mistakes",
+
+  "showErrorsTitle": "Show wrong numbers",
+  "showErrorsSubtitle": "Marks incorrectly entered numbers in color",
+
+  "highlightsTitle": "Highlights",
+  "highlightsSubtitle": "Color-highlight the row/column/box and matching numbers",
+
+  "highlightColorTitle": "Highlight color",
+
+  "soundTitle": "Sound",
+  "soundSubtitle": "Feedback tones and vibration on input",
+
+  "designHeading": "Theme",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+
+  "languageHeading": "Language",
+  "languageSystem": "System",
+  "languageGerman": "Deutsch",
+  "languageEnglish": "English",
+
+  "highlightColorRed": "Red",
+  "highlightColorOrange": "Orange",
+  "highlightColorGreen": "Green",
+  "highlightColorBlue": "Blue",
+  "highlightColorPurple": "Purple",
+  "highlightColorTeal": "Teal",
+
+  "difficultyEasy": "Easy",
+  "difficultyMedium": "Medium",
+  "difficultyHard": "Hard",
+  "difficultyExpert": "Expert",
+
+  "undoLabel": "Undo",
+  "redoLabel": "Redo",
+  "notesLabel": "Notes",
+  "autoNotesLabel": "Auto-Notes",
+  "hintLabel": "Hint ({count})",
+
+  "leaderboardTitle": "Leaderboard",
+
+  "hintNakedSingle": "Row {row}, column {col} has only one possible candidate: {value}.",
+  "hintHiddenSingle": "In {unit}, {value} can only go in row {row}, column {col}.",
+  "unitRow": "row {n}",
+  "unitColumn": "column {n}",
+  "unitBox": "box {n}",
+
+  "leadInPairElimination": "After elimination via a pair pattern (naked pair / pointing pair / box-line reduction):",
+  "leadInHiddenPair": "After elimination via a hidden pair:",
+  "leadInNakedTriple": "After elimination via a candidate triple:",
+  "leadInXWing": "After elimination via an X-Wing pattern:",
+
+  "techniqueNakedSingle": "Naked Single",
+  "techniqueHiddenSingle": "Hidden Single",
+  "techniquePairElimination": "Candidate elimination (naked pair / pointing pair / box-line reduction)",
+  "techniqueHiddenPair": "Hidden pair",
+  "techniqueNakedTriple": "Naked triple",
+  "techniqueXWing": "X-Wing",
+  "techniqueBacktracking": "Backtracking (trial and error)",
+
+  "hintDirectReveal": "No simple logical rule applies here - the solution for this cell is revealed directly."
+}

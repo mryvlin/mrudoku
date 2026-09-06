@@ -2,19 +2,6 @@
 enum Difficulty { easy, medium, hard, expert }
 
 extension DifficultyX on Difficulty {
-  String get label {
-    switch (this) {
-      case Difficulty.easy:
-        return 'Einfach';
-      case Difficulty.medium:
-        return 'Mittel';
-      case Difficulty.hard:
-        return 'Schwer';
-      case Difficulty.expert:
-        return 'Experte';
-    }
-  }
-
   /// Number of given (pre-filled) cells the generator aims to keep. Lower
   /// clue counts require harder solving techniques and more backtracking
   /// during generation.

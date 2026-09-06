@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mrsudoku/l10n/app_localizations.dart';
 import 'package:mrsudoku/logic/providers.dart';
 import 'package:mrsudoku/models/settings.dart';
 import 'package:mrsudoku/ui/screens/settings_screen.dart';
@@ -15,14 +16,19 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: SettingsScreen()),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SettingsScreen(),
+        ),
       ),
     );
     await tester.pump();
 
     expect(container.read(settingsControllerProvider).highlightColor, HighlightColor.red);
 
-    await tester.tap(find.byTooltip(HighlightColor.blue.label));
+    final l10n = AppLocalizations.of(tester.element(find.byType(SettingsScreen)))!;
+    await tester.tap(find.byTooltip(l10n.highlightColorBlue));
     await tester.pump();
 
     expect(container.read(settingsControllerProvider).highlightColor, HighlightColor.blue);

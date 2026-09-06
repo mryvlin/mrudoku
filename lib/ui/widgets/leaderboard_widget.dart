@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/difficulty.dart';
 import '../../models/leaderboard_entry.dart';
+import '../difficulty_labels.dart';
 import '../format_duration.dart';
 
 /// Best-times board shown on the Home screen: for every difficulty that has
@@ -36,7 +38,7 @@ class LeaderboardWidget extends StatelessWidget {
               children: [
                 Icon(Icons.emoji_events_outlined, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
-                Text('Bestenliste', style: theme.textTheme.titleMedium),
+                Text(AppLocalizations.of(context)!.leaderboardTitle, style: theme.textTheme.titleMedium),
               ],
             ),
             for (final difficulty in Difficulty.values)
@@ -69,7 +71,7 @@ class _DifficultySection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            difficulty.label,
+            difficulty.label(AppLocalizations.of(context)!),
             style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary),
           ),
           for (var i = 0; i < entries.length; i++)

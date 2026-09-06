@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../logic/providers.dart';
 import '../../models/board.dart';
-import '../../models/difficulty.dart';
+import '../difficulty_labels.dart';
 import '../format_duration.dart';
+import '../hint_text.dart';
 import '../widgets/game_toolbar_widget.dart';
 import '../widgets/number_pad_widget.dart';
 import '../widgets/sudoku_board_widget.dart';
@@ -56,6 +58,7 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameControllerProvider);
     final settings = ref.watch(settingsControllerProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     if (gameState == null) {
       return const Scaffold(
@@ -79,15 +82,15 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
 
     final scaffold = Scaffold(
       appBar: AppBar(
-        title: Text('Sudoku - ${gameState.difficulty.label}'),
+        title: Text(l10n.gameTitle(gameState.difficulty.label(l10n))),
         actions: [
           IconButton(
-            tooltip: gameState.isPaused ? 'Fortsetzen' : 'Pausieren',
+            tooltip: gameState.isPaused ? l10n.resume : l10n.pause,
             icon: Icon(gameState.isPaused ? Icons.play_arrow : Icons.pause),
             onPressed: () => ref.read(gameControllerProvider.notifier).togglePause(),
           ),
           IconButton(
-            tooltip: 'Einstellungen',
+            tooltip: l10n.settings,
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -178,9 +181,10 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
   }
 
   Future<void> _useHint() async {
-    final explanation = await ref.read(gameControllerProvider.notifier).useHint();
-    if (explanation != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(explanation)));
+    final step = await ref.read(gameControllerProvider.notifier).useHint();
+    if (step != null && mounted) {
+      final message = describeHint(step, AppLocalizations.of(context)!);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -192,29 +196,31 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
   }
 
   void _showWinDialog(int elapsedSeconds) {
+    final l10n = AppLocalizations.of(context)!;
     showWinCelebration(context);
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Geschafft! 🎉'),
-        content: Text('Du hast das Rätsel in ${formatDuration(elapsedSeconds)} gelöst.'),
+        title: Text(l10n.wonTitle),
+        content: Text(l10n.wonMessage(formatDuration(elapsedSeconds))),
         actions: [
-          TextButton(onPressed: _leaveToMenu, child: const Text('Zum Menü')),
+          TextButton(onPressed: _leaveToMenu, child: Text(l10n.backToMenu)),
         ],
       ),
     );
   }
 
   void _showGameOverDialog() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Game Over'),
-        content: const Text('Du hast das Fehlerlimit erreicht.'),
+        title: Text(l10n.gameOverTitle),
+        content: Text(l10n.gameOverMessage),
         actions: [
-          TextButton(onPressed: _leaveToMenu, child: const Text('Zum Menü')),
+          TextButton(onPressed: _leaveToMenu, child: Text(l10n.backToMenu)),
         ],
       ),
     );
@@ -267,17 +273,18 @@ class _PausedOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(Icons.pause_circle_outline, size: 64, color: Theme.of(context).colorScheme.primary),
         const SizedBox(height: 12),
-        Text('Pausiert', style: Theme.of(context).textTheme.titleLarge),
+        Text(l10n.paused, style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
         FilledButton.icon(
           onPressed: onResume,
           icon: const Icon(Icons.play_arrow),
-          label: const Text('Fortsetzen'),
+          label: Text(l10n.resume),
         ),
       ],
     );

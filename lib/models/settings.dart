@@ -1,30 +1,17 @@
 /// User-facing theme choice. `system` follows the OS setting.
 enum AppThemeMode { system, light, dark }
 
-/// Selectable accent color for selection/peer/same-value highlighting on the
-/// board. The actual paint color (which shifts shade for dark mode) is
-/// resolved in the UI layer - see `HighlightColorX` in
-/// `ui/highlight_colors.dart` - so this model stays free of Flutter imports.
-enum HighlightColor { red, orange, green, blue, purple, teal }
+/// User-facing language choice. `system` follows the OS locale (falling back
+/// to German if the OS locale isn't supported - see `supportedLocales` in
+/// main.dart).
+enum AppLocale { system, de, en }
 
-extension HighlightColorX on HighlightColor {
-  String get label {
-    switch (this) {
-      case HighlightColor.red:
-        return 'Rot';
-      case HighlightColor.orange:
-        return 'Orange';
-      case HighlightColor.green:
-        return 'Grün';
-      case HighlightColor.blue:
-        return 'Blau';
-      case HighlightColor.purple:
-        return 'Lila';
-      case HighlightColor.teal:
-        return 'Türkis';
-    }
-  }
-}
+/// Selectable accent color for selection/peer/same-value highlighting on the
+/// board. The actual paint color (which shifts shade for dark mode) and the
+/// localized display name are resolved in the UI layer - see
+/// `HighlightColorX` in `ui/highlight_colors.dart` - so this model stays free
+/// of Flutter imports.
+enum HighlightColor { red, orange, green, blue, purple, teal }
 
 /// Persisted user preferences (Einstellungsseite).
 class Settings {
@@ -38,6 +25,7 @@ class Settings {
   /// *limit* itself).
   final bool showErrors;
   final AppThemeMode themeMode;
+  final AppLocale locale;
   final bool soundEnabled;
 
   const Settings({
@@ -47,6 +35,7 @@ class Settings {
     this.highlightColor = HighlightColor.red,
     this.showErrors = true,
     this.themeMode = AppThemeMode.system,
+    this.locale = AppLocale.system,
     this.soundEnabled = true,
   });
 
@@ -57,6 +46,7 @@ class Settings {
     HighlightColor? highlightColor,
     bool? showErrors,
     AppThemeMode? themeMode,
+    AppLocale? locale,
     bool? soundEnabled,
   }) {
     return Settings(
@@ -66,6 +56,7 @@ class Settings {
       highlightColor: highlightColor ?? this.highlightColor,
       showErrors: showErrors ?? this.showErrors,
       themeMode: themeMode ?? this.themeMode,
+      locale: locale ?? this.locale,
       soundEnabled: soundEnabled ?? this.soundEnabled,
     );
   }
@@ -77,6 +68,7 @@ class Settings {
         'highlightColor': highlightColor.name,
         'showErrors': showErrors,
         'themeMode': themeMode.name,
+        'locale': locale.name,
         'soundEnabled': soundEnabled,
       };
 
@@ -92,6 +84,10 @@ class Settings {
         themeMode: AppThemeMode.values.firstWhere(
           (m) => m.name == json['themeMode'],
           orElse: () => AppThemeMode.system,
+        ),
+        locale: AppLocale.values.firstWhere(
+          (l) => l.name == json['locale'],
+          orElse: () => AppLocale.system,
         ),
         soundEnabled: json['soundEnabled'] as bool? ?? true,
       );

@@ -26,4 +26,19 @@ void main() {
     expect(updated.highlightColor, HighlightColor.purple);
     expect(updated.highlightEnabled, settings.highlightEnabled);
   });
+
+  test('defaults to following the system locale', () {
+    expect(const Settings().locale, AppLocale.system);
+  });
+
+  test('toJson/fromJson round-trips the chosen locale', () {
+    const settings = Settings(locale: AppLocale.en);
+    final restored = Settings.fromJson(settings.toJson());
+    expect(restored.locale, AppLocale.en);
+  });
+
+  test('fromJson falls back to system for a missing or unknown locale', () {
+    expect(Settings.fromJson(const {}).locale, AppLocale.system);
+    expect(Settings.fromJson(const {'locale': 'fr'}).locale, AppLocale.system);
+  });
 }

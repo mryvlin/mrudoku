@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
+
 /// Row of secondary gameplay actions: undo/redo, notes-mode toggle,
 /// auto-fill notes, and the hint button.
 class GameToolbarWidget extends StatelessWidget {
@@ -28,13 +30,14 @@ class GameToolbarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         Expanded(
           child: _ToolbarButton(
             key: const ValueKey('toolbar-undo'),
             icon: Icons.undo,
-            label: 'Rückgängig',
+            label: l10n.undoLabel,
             onTap: canUndo ? onUndo : null,
           ),
         ),
@@ -42,7 +45,7 @@ class GameToolbarWidget extends StatelessWidget {
           child: _ToolbarButton(
             key: const ValueKey('toolbar-redo'),
             icon: Icons.redo,
-            label: 'Wiederholen',
+            label: l10n.redoLabel,
             onTap: canRedo ? onRedo : null,
           ),
         ),
@@ -50,7 +53,7 @@ class GameToolbarWidget extends StatelessWidget {
           child: _ToolbarButton(
             key: const ValueKey('toolbar-notes'),
             icon: notesMode ? Icons.edit_note : Icons.edit_outlined,
-            label: 'Notizen',
+            label: l10n.notesLabel,
             isActive: notesMode,
             onTap: onToggleNotes,
           ),
@@ -59,7 +62,7 @@ class GameToolbarWidget extends StatelessWidget {
           child: _ToolbarButton(
             key: const ValueKey('toolbar-autonotes'),
             icon: Icons.auto_fix_high_outlined,
-            label: 'Auto-Notizen',
+            label: l10n.autoNotesLabel,
             onTap: onAutoFillNotes,
           ),
         ),
@@ -67,7 +70,7 @@ class GameToolbarWidget extends StatelessWidget {
           child: _ToolbarButton(
             key: const ValueKey('toolbar-hint'),
             icon: Icons.lightbulb_outline,
-            label: 'Hinweis ($hintsRemaining)',
+            label: l10n.hintLabel(hintsRemaining),
             onTap: hintsRemaining > 0 ? onHint : null,
           ),
         ),

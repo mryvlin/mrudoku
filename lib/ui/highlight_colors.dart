@@ -1,10 +1,30 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/settings.dart';
 
-/// Maps a [HighlightColor] choice to actual paint colors. Kept in the UI
-/// layer so `models/settings.dart` stays free of Flutter imports.
+/// Maps a [HighlightColor] choice to actual paint colors and its localized
+/// display name. Kept in the UI layer so `models/settings.dart` stays free
+/// of Flutter/localization imports.
 extension HighlightColorX on HighlightColor {
+  /// Localized display name shown in the settings picker.
+  String label(AppLocalizations l10n) {
+    switch (this) {
+      case HighlightColor.red:
+        return l10n.highlightColorRed;
+      case HighlightColor.orange:
+        return l10n.highlightColorOrange;
+      case HighlightColor.green:
+        return l10n.highlightColorGreen;
+      case HighlightColor.blue:
+        return l10n.highlightColorBlue;
+      case HighlightColor.purple:
+        return l10n.highlightColorPurple;
+      case HighlightColor.teal:
+        return l10n.highlightColorTeal;
+    }
+  }
+
   /// The color used to paint selection/peer/same-value highlighting on the
   /// board, shifted to a lighter shade in dark mode for contrast against a
   /// dark surface.

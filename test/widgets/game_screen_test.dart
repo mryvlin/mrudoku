@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mrsudoku/l10n/app_localizations.dart';
 import 'package:mrsudoku/logic/candidates.dart';
 import 'package:mrsudoku/logic/providers.dart';
 import 'package:mrsudoku/models/difficulty.dart';
@@ -36,7 +37,11 @@ Future<ProviderContainer> _startedContainer(WidgetTester tester) async {
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(home: GameScreen()),
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const GameScreen(),
+      ),
     ),
   );
   await tester.pump();
