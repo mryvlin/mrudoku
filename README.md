@@ -1,80 +1,113 @@
 # mrsudoku
 
-Ein vollständiges, produktionsreifes Sudoku-Spiel als Flutter-App - lauffähig
-als Android-App und als Web-App (Flutter Web). Komplett offline, keine
-Cloud-Abhängigkeit.
+A complete, production-ready Sudoku game as a Flutter app - runnable as an
+Android app and as a web app (Flutter Web). Fully offline, no cloud
+dependency, localized in German and English.
 
-## Architektur
+## Architecture
 
-Die Kern-UI (Raster, Zahleneingabe, Nummernpad) ist mit normalen
-Flutter-Widgets umgesetzt statt mit einer reinen Flame-Canvas-Lösung - für ein
-rasterbasiertes Puzzle ist das robuster, einfacher zugänglich (Screenreader,
-Touch-Ziele, Layout) und leichter zu warten. Flame kommt gezielt dort zum
-Einsatz, wo es echten Mehrwert bringt: der Konfetti-Partikeleffekt beim Lösen
-des Rätsels (`lib/ui/widgets/win_celebration.dart`).
+The core UI (grid, number entry, number pad) is built with plain Flutter
+widgets instead of a pure Flame-canvas solution - for a grid-based puzzle
+this is more robust, more accessible (screen reader, touch targets, layout),
+and easier to maintain. Flame is used specifically where it adds real value:
+the confetti particle effect when the puzzle is solved
+(`lib/ui/widgets/win_celebration.dart`).
 
-Als State-Management-Lösung kommt **Riverpod** (`flutter_riverpod`, moderne
-`Notifier`/`NotifierProvider`-API) zum Einsatz: Spiellogik lässt sich darüber
-unabhängig von Flutter-Widgets testen (siehe `test/logic/game_controller_test.dart`,
-das den Controller über einen `ProviderContainer` ganz ohne Widget-Baum
-durchspielt), Abhängigkeiten (Persistenz, Sound) werden sauber injiziert statt
-global referenziert, und die reaktive Aktualisierung von Board, Timer und
-Einstellungen ist ohne manuelles `setState`-Jonglieren möglich.
+**Riverpod** (`flutter_riverpod`, the modern `Notifier`/`NotifierProvider`
+API) is used for state management: it lets game logic be tested
+independently of Flutter widgets (see `test/logic/game_controller_test.dart`,
+which drives the controller through a `ProviderContainer` with no widget
+tree at all), dependencies (persistence, sound, leaderboard) are cleanly
+injected rather than referenced globally, and reactive updates to the board,
+timer, and settings work without manual `setState` juggling.
 
-### Projektstruktur
+**Localization** uses Flutter's standard ARB/`gen-l10n` toolchain
+(`flutter_localizations`, `intl`, `lib/l10n/*.arb`), defaulting to the OS
+locale (German otherwise) with an in-app override in Settings. The solving
+logic stays presentation-agnostic: `HintEngine` returns structured data
+(technique, position, which unit forced it) with no text at all, and
+`ui/hint_text.dart` composes the localized explanation from it - keeping
+`lib/logic/` free of Flutter/localization imports, consistent with the rest
+of that layer.
+
+### Project structure
 
 ```
 lib/
-  models/     Reines Dart, keine Flutter-Imports: Cell, Board, Difficulty,
-              Settings, GameState. Unveränderlich (immutable), JSON-
-              serialisierbar für die Persistenz.
-  logic/      Reines Dart: Solver (Backtracking + Eindeutigkeitsprüfung),
-              Generator (erzeugt Rätsel mit eindeutiger Lösung), HintEngine
-              (Naked/Hidden Single, Naked/Pointing Pair - Basis für
-              Hinweise und Schwierigkeitsberechnung), Validator
-              (Regelprüfung), GameController (Riverpod-Notifier mit der
-              gesamten Spiel-Zustandsmaschine), SettingsController.
-  services/   Persistenz (SharedPreferences) für Spielstand und
-              Einstellungen, PuzzleGenerationService (führt den Generator
-              in einem Isolate via compute() aus, damit die Puzzle-
-              Generierung die UI nicht blockiert), SoundService.
-  ui/         Flutter-Widgets: Screens (Home, Game, Settings) und
-              wiederverwendbare Widgets (Sudoku-Raster, Zelle, Nummernpad,
-              Toolbar, Gewinn-Animation).
+  models/     Pure Dart, no Flutter imports: Cell, Board, Difficulty,
+              Settings, GameState, LeaderboardEntry. Immutable,
+              JSON-serializable for persistence.
+  logic/      Pure Dart: Solver (backtracking + uniqueness check),
+              Generator (produces puzzles with a unique solution), HintEngine
+              (Naked/Hidden Single, Naked/Pointing Pair, Box-Line Reduction,
+              Hidden Pair, Naked Triple, X-Wing - basis for hints and
+              difficulty rating), Validator (rule checking), GameController
+              (Riverpod Notifier with the entire game state machine),
+              SettingsController, LeaderboardController, and the
+              saved-game provider that backs Home's resume offer.
+  services/   Persistence (SharedPreferences) for game state, settings and
+              the leaderboard, PuzzleGenerationService (runs the generator
+              in an isolate via compute() so puzzle generation doesn't
+              block the UI), SoundService.
+  l10n/       ARB source strings (`app_de.arb`, `app_en.arb`) and the
+              generated `AppLocalizations` (see l10n.yaml).
+  ui/         Flutter widgets: screens (Home, Game, Settings) and
+              reusable widgets (Sudoku grid, cell, number pad, toolbar,
+              leaderboard card, win animation), plus small UI-layer helpers
+              that localize model enums (difficulty names, highlight color
+              names, hint explanations) without pulling Flutter into
+              models/ or logic/.
 test/
-  logic/      Unit-Tests: Solver, Validator, Generator (Eindeutigkeit der
-              Lösung), HintEngine, GameController.
-  models/     Unit-Test für die Schwierigkeitsberechnung (Difficulty).
-  widgets/    Widget-Tests für zentrale UI-Interaktionen: Zahl eingeben,
-              Notiz eintragen, Undo.
+  logic/      Unit tests: Solver, Validator, Generator (uniqueness of
+              the solution), HintEngine, GameController.
+  models/     Unit tests: Difficulty, Settings, GameState.
+  services/   Unit tests: LeaderboardService (ranking, per-difficulty cap).
+  ui/         Unit tests for the localized hint-explanation composer and
+              the difficulty/highlight-color label helpers.
+  widgets/    Widget tests for core UI interactions: entering a number,
+              entering a note, undo, the settings screen, and the board's
+              hint-focused peer highlighting.
 ```
 
 ## Features
 
-- 9x9-Sudoku mit Zellen-Notizen (Pencil Marks) und Status
-  (vorgegeben/eingetragen).
-- Puzzle-Generator mit garantiert eindeutiger Lösung, vier
-  Schwierigkeitsgrade (Easy/Medium/Hard/Expert), gesteuert über Clue-Anzahl
-  und benötigte Lösungstechnik.
-- Solver/Hint-Engine: zeigt die nächste logisch ableitbare Zahl inkl. kurzer
-  Begründung, statt einfach die Lösung zu verraten.
-- Zellenauswahl per Tap/Klick, Nummernpad (1-9 + Löschen), funktioniert mit
-  Touch und Maus gleichermaßen.
-- Notizen-Modus inkl. Ein-Klick-"Auto-Notizen" (füllt alle legalen
-  Kandidaten automatisch ein).
-- Hervorhebung von Zeile/Spalte/Box und gleichen Zahlen (abschaltbar).
-- Fehleranzeige (abschaltbar) und Fehlerzähler mit konfigurierbarem Limit.
-- Undo/Redo, Timer (pausierbar), begrenzte Hinweise pro Spiel.
-- Automatisches Speichern des laufenden Spiels (übersteht App-Kill) und
-  Angebot zum Fortsetzen beim nächsten Start.
-- Gewinn-Erkennung mit Konfetti-Animation (Flame).
-- Dark/Light Mode (folgt optional dem System), Einstellungsseite für alle
-  genannten Optionen.
+- 9x9 Sudoku with cell notes (pencil marks) and status
+  (given/entered). A note can only be added if it's still a legal
+  candidate for the cell; a wrong number entry never erases existing
+  notes (its own or a peer's) - only a confirmed-correct entry does.
+- Puzzle generator with a guaranteed unique solution, four
+  difficulty levels (Easy/Medium/Hard/Expert), controlled via clue count
+  and required solving technique.
+- Solver/hint engine covering Naked/Hidden Single, Naked Pair, Pointing
+  Pair, Box-Line Reduction, Hidden Pair, Naked Triple and X-Wing. A hint
+  shows the next logically derivable number with a short explanation in a
+  persistent banner (not a timed snackbar), and - for a hidden single -
+  narrows the board's highlight down to the exact row/column/box that
+  forced it, instead of just revealing the answer. Number of hints per
+  game is configurable (default 5).
+- Cell selection via tap/click, number pad (1-9 + erase), works with
+  touch and mouse alike.
+- Notes mode including one-click "auto-notes" (fills in all legal
+  candidates automatically).
+- Highlighting of row/column/box and matching numbers (can be turned off),
+  with a selectable accent color (red/orange/green/blue/purple/teal).
+- Error display (can be turned off) and mistake counter with a configurable
+  limit.
+- Undo/redo, timer (pausable).
+- Robust autosave: the game in progress is saved after nearly every move,
+  flushed immediately when leaving the game screen (back button/gesture) or
+  when the app is backgrounded/closed, and offered for resume on the next
+  launch - or the player can start a new game instead, replacing the save.
+- Local leaderboard: the fastest completion times per difficulty are
+  tracked and shown on the Home screen.
+- Win detection with confetti animation (Flame).
+- Dark/light mode and language (German/English) each optionally follow the
+  system; a settings screen covers all of the above.
 
 ## Build
 
-Voraussetzung: [Flutter SDK](https://docs.flutter.dev/get-started/install)
-(stable channel; entwickelt und getestet mit Flutter 3.47.2 / Dart 3.13.2).
+Prerequisite: [Flutter SDK](https://docs.flutter.dev/get-started/install)
+(stable channel; developed and tested with Flutter 3.47.2 / Dart 3.13.2).
 
 ```bash
 flutter pub get
@@ -86,11 +119,16 @@ flutter build apk
 flutter build web
 ```
 
-Zum lokalen Entwickeln/Debuggen:
+`flutter pub get` also regenerates `lib/l10n/app_localizations*.dart` from
+the ARB files (`generate: true` in `pubspec.yaml`); run `flutter gen-l10n`
+directly after editing an ARB file if you want the generated code refreshed
+without a full `pub get`.
+
+For local development/debugging:
 
 ```bash
 flutter run -d chrome   # Web
-flutter run             # verbundenes Android-Gerät/Emulator
+flutter run             # connected Android device/emulator
 ```
 
 ## Tests
@@ -99,44 +137,48 @@ flutter run             # verbundenes Android-Gerät/Emulator
 flutter test
 ```
 
-Deckt ab: Solver (Zufallsbefüllung, Eindeutigkeitsprüfung), Generator
-(Eindeutigkeit + Reproduzierbarkeit je Schwierigkeitsgrad), Validator
-(Zeilen-/Spalten-/Box-Konflikte, Lösungserkennung), HintEngine
-(Naked-Single-Erkennung, Schwierigkeitsberechnung), GameController
-(Eingabe, Notizen, Undo/Redo, Hinweise, Auto-Notizen) sowie Widget-Tests für
-Zahleneingabe, Notizeingabe und Undo über die echte `GameScreen`-UI.
+Covers: Solver (randomized fill, uniqueness check), Generator (uniqueness +
+reproducibility per difficulty level), Validator (row/column/box conflicts,
+solved-state detection), HintEngine (every implemented technique down to
+X-Wing, difficulty rating), GameController (input, notes and their
+legality/preservation rules, undo/redo, hints, auto-notes, autosave/resume,
+leaderboard recording), LeaderboardService (ranking and per-difficulty cap),
+Settings/GameState (defaults, JSON round-trips), the localized hint-text and
+label helpers, and widget tests for number entry, note entry, undo, the
+settings screen, and the board's hint-focused highlighting - through the
+real `GameScreen`/`SettingsScreen`/`SudokuBoardWidget` UI.
 
-## Bekannte Einschränkungen
+## Known limitations
 
-- **Android-SDK dieser Entwicklungsumgebung**: Diese Maschine hat Android
-  SDK 34 installiert, Flutter 3.47.2 verlangt SDK 36 + Build-Tools 28.0.3.
-  Ein `flutter build apk` kann deshalb hier fehlschlagen, bis das Android
-  SDK aktualisiert ist (`sdkmanager` bzw. Android Studio SDK Manager) und
-  die Lizenzen akzeptiert wurden (`flutter doctor --android-licenses`). Der
-  Code selbst ist plattformunabhängig und wurde für Web erfolgreich
-  gebaut/getestet.
-- **Intel-Mac-Warnung**: Flutter kündigt an, Intel-basierte Macs künftig
-  nicht mehr für Android/iOS-Builds zu unterstützen (`flutter doctor`
-  zeigt eine entsprechende Warnung). Für Web-Builds ist das ohne Belang.
-- **Puzzle-Generierung im Web**: `compute()` nutzt auf Flutter Web keinen
-  echten OS-Thread (Web-Isolates/Worker sind eingeschränkt), sondern läuft
-  asynchron im selben Thread. Die UI blockiert dadurch nicht spürbar (die
-  Generierung ist ein kurzer Rechenschritt), aber es ist kein echtes
-  Multithreading wie auf Android.
-- **Schwierigkeitsgrad-Rating**: Die Hint-Engine implementiert eine
-  Teilmenge gängiger Solving-Techniken (Naked/Hidden Single, Naked Pair,
-  Pointing Pair). Für Hard/Expert-Rätsel, die eine Technik jenseits dieser
-  Teilmenge erfordern, meldet `HintEngine.rateDifficulty` `backtracking`
-  (= "erfordert Ausprobieren/mehr als die implementierten Techniken");
-  die tatsächliche Schwierigkeit wird in diesen Fällen primär über die
-  Clue-Anzahl gesteuert, nicht über eine vollständige Technik-Taxonomie.
-- **Sound**: Es werden keine eigenen Audio-Assets mitgeliefert. Der
-  Sound-Schalter in den Einstellungen steuert System-Klicks
-  (`SystemSound.play`) und Haptic-Feedback. `lib/services/sound_service.dart`
-  ist bewusst so gekapselt, dass sich später echte Soundeffekte (z. B. via
-  `audioplayers`/`flame_audio`) ergänzen lassen, ohne Aufrufstellen im
-  restlichen Code anzupassen.
-- **Undo/Redo-Historie wird nicht persistiert**: Nur der aktuelle Spielstand
-  (Board, Timer, Fehler, Hinweise) wird gespeichert; die Undo/Redo-Stacks
-  werden nach einem App-Neustart zurückgesetzt, um die Speichergröße klein
-  zu halten.
+- **Android SDK licenses in this development environment**: The Android SDK
+  itself is at the version Flutter 3.47.2 expects, but `flutter doctor`
+  reports outstanding license agreements; `flutter build apk` may fail here
+  until they're accepted (`flutter doctor --android-licenses`). The code
+  itself is platform-independent and has been successfully built/tested for
+  web.
+- **Intel Mac warning**: Flutter has announced it will stop supporting
+  Intel-based Macs for Android/iOS builds in the future (`flutter doctor`
+  shows a corresponding warning). This is irrelevant for web builds.
+- **Puzzle generation on web**: `compute()` doesn't use a real OS thread on
+  Flutter Web (web isolates/workers are limited), but instead runs
+  asynchronously on the same thread. This doesn't noticeably block the UI
+  (generation is a short computation), but it isn't real multithreading
+  like on Android.
+- **Difficulty rating**: The hint engine implements a substantial but still
+  partial set of solving techniques (see Features above). For Hard/Expert
+  puzzles that require a technique beyond that set,
+  `HintEngine.rateDifficulty` reports `backtracking` (= "requires trial and
+  error/more than the implemented techniques"); in these cases the actual
+  difficulty is controlled primarily via the clue count, not via a complete
+  technique taxonomy.
+- **Sound**: No custom audio assets are shipped. The sound toggle in
+  settings controls system clicks (`SystemSound.play`) and haptic feedback.
+  `lib/services/sound_service.dart` is deliberately encapsulated so that
+  real sound effects (e.g. via `audioplayers`/`flame_audio`) can be added
+  later without touching call sites elsewhere in the code.
+- **Undo/redo history is not persisted**: Only the current game state
+  (board, timer, mistakes, hints) is saved; the undo/redo stacks are reset
+  after an app restart to keep the save size small.
+- **Leaderboard is local-only**: Times are stored on-device
+  (`shared_preferences`), per difficulty, capped at the 10 fastest; there's
+  no cross-device sync or global ranking.
