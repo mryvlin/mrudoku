@@ -170,6 +170,19 @@ void main() {
     expect(cell.notes, contains(2));
   });
 
+  test('a new note can still be added to a cell holding a wrong guess', () {
+    controller.restore(_fixtureState());
+    controller.selectCell(0, 0);
+    controller.inputNumber(3); // solution at (0, 0) is 5, so 3 is wrong
+    expect(state().mistakes, 1);
+    expect(state().board.cellAt(0, 0).value, 3);
+
+    controller.toggleNotesMode();
+    controller.inputNumber(7); // still a legal candidate ignoring the wrong 3
+
+    expect(state().board.cellAt(0, 0).notes, contains(7));
+  });
+
   test("a correct number entry clears the cell's own notes", () {
     controller.restore(_fixtureState());
     controller.selectCell(0, 0);
