@@ -151,6 +151,53 @@ void main() {
     expect(state().board.cellAt(0, 1).notes, isNot(contains(5)));
   });
 
+  test("a wrong number entry keeps the cell's own notes, restored once erased", () {
+    controller.restore(_fixtureState());
+    controller.selectCell(0, 0);
+    controller.toggleNotesMode();
+    controller.inputNumber(2); // note on the cell itself
+    controller.toggleNotesMode();
+
+    controller.inputNumber(3); // solution at (0, 0) is 5, so 3 is wrong
+
+    expect(state().mistakes, 1);
+    expect(state().board.cellAt(0, 0).value, 3);
+
+    controller.eraseSelected();
+
+    final cell = state().board.cellAt(0, 0);
+    expect(cell.value, 0);
+    expect(cell.notes, contains(2));
+  });
+
+  test("a correct number entry clears the cell's own notes", () {
+    controller.restore(_fixtureState());
+    controller.selectCell(0, 0);
+    controller.toggleNotesMode();
+    controller.inputNumber(2);
+    controller.toggleNotesMode();
+
+    controller.inputNumber(5); // matches the solution
+
+    expect(state().mistakes, 0);
+    expect(state().board.cellAt(0, 0).notes, isEmpty);
+  });
+
+  test('erasing an empty cell still clears its own pencil marks', () {
+    controller.restore(_fixtureState());
+    controller.selectCell(0, 0);
+    controller.toggleNotesMode();
+    controller.inputNumber(2);
+    controller.toggleNotesMode();
+    expect(state().board.cellAt(0, 0).notes, contains(2));
+
+    controller.eraseSelected();
+
+    final cell = state().board.cellAt(0, 0);
+    expect(cell.value, 0);
+    expect(cell.notes, isEmpty);
+  });
+
   test('undo reverts the last change and redo re-applies it', () {
     final pos = _firstEmptyCell(state());
     controller.selectCell(pos.$1, pos.$2);

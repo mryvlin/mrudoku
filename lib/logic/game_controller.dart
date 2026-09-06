@@ -134,10 +134,11 @@ class GameController extends Notifier<GameState?> {
     if (cell.value == value) return;
 
     final isCorrect = s.solution.cellAt(row, col).value == value;
-    final placedBoard = s.board.setCell(row, col, cell.copyWith(value: value, clearNotes: true));
-    // Only strip the matching note from peers once the entry is confirmed
-    // correct - a wrong guess shouldn't erase pencil marks the player
-    // still needs elsewhere.
+    // Only clear this cell's own notes - and strip the matching note from
+    // peers - once the entry is confirmed correct. A wrong guess shouldn't
+    // erase pencil marks: erasing the wrong value (see eraseSelected) should
+    // bring them right back.
+    final placedBoard = s.board.setCell(row, col, cell.copyWith(value: value, clearNotes: isCorrect));
     final newBoard = isCorrect ? _stripNoteFromPeers(placedBoard, row, col, value) : placedBoard;
 
     var newState = _withHistory(s, newBoard).copyWith(
@@ -166,7 +167,11 @@ class GameController extends Notifier<GameState?> {
     final row = s.selectedRow!, col = s.selectedCol!;
     final cell = s.board.cellAt(row, col);
     if (cell.isGiven || (cell.isEmpty && cell.notes.isEmpty)) return;
-    final newBoard = s.board.setCell(row, col, cell.copyWith(value: 0, clearNotes: true));
+    // Erasing an empty cell clears its pencil marks (that's the point of
+    // pressing erase there). Erasing a placed value keeps any notes the
+    // cell already had, so undoing a wrong guess brings them right back.
+    final newCell = cell.isEmpty ? cell.copyWith(clearNotes: true) : cell.copyWith(value: 0);
+    final newBoard = s.board.setCell(row, col, newCell);
     state = _withHistory(s, newBoard);
     _persist();
   }
