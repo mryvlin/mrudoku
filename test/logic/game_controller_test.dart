@@ -304,6 +304,21 @@ void main() {
     expect(state().hintsRemaining, before - 1);
   });
 
+  test('useHint refuses to hint while a wrong entry is still on the board', () async {
+    controller.restore(_fixtureState());
+    controller.selectCell(0, 0);
+    controller.inputNumber(3); // solution at (0, 0) is 5, so 3 is wrong
+    expect(state().mistakes, 1);
+    final hintsBefore = state().hintsRemaining;
+
+    final step = await controller.useHint();
+
+    expect(step, isNull);
+    expect(state().hintsRemaining, hintsBefore);
+    // The wrong entry is untouched - a hint must not silently "fix" it.
+    expect(state().board.cellAt(0, 0).value, 3);
+  });
+
   test('autoFillNotes fills every empty cell with its legal candidates', () {
     controller.autoFillNotes();
 

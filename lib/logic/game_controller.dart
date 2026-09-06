@@ -240,10 +240,19 @@ class GameController extends Notifier<GameState?> {
   /// Places the next logically derivable number (see [HintEngine]) and
   /// returns the [HintStep] taken - the UI (see `ui/hint_text.dart`) turns
   /// this into a localized explanation - or `null` if no hint could be given
-  /// (no hints left, or game finished/paused).
+  /// (no hints left, game finished/paused, or a wrong entry needs clearing
+  /// first - see [_hasWrongEntry]).
   Future<HintStep?> useHint() async {
     final s = state;
     if (s == null || _locked(s) || s.hintsRemaining <= 0) return null;
+    // A wrong-but-not-rule-breaking entry (e.g. a digit that's correct
+    // nowhere else in its row/column/box but isn't what the unique solution
+    // needs here) still counts as "placed" for HintEngine's candidate
+    // computation, since HintEngine only sees the board, not the solution.
+    // That can corrupt deductions elsewhere - e.g. ruling out the correct
+    // digit for a peer cell - and produce a "confident" hint that
+    // contradicts the true solution. Refuse to hint until it's cleared.
+    if (_hasWrongEntry(s)) return null;
 
     final logicalStep = HintEngine.nextLogicalStep(s.board);
     final HintStep step;
@@ -335,6 +344,20 @@ class GameController extends Notifier<GameState?> {
       }
     }
     return null;
+  }
+
+  /// True if any non-given, non-empty cell holds a value that isn't what
+  /// [GameState.solution] has there - a mistake the player hasn't erased
+  /// yet, even though it may not break any row/column/box rule on its own.
+  bool _hasWrongEntry(GameState s) {
+    for (var r = 0; r < kBoardSize; r++) {
+      for (var c = 0; c < kBoardSize; c++) {
+        final cell = s.board.cellAt(r, c);
+        if (cell.isGiven || cell.isEmpty) continue;
+        if (cell.value != s.solution.cellAt(r, c).value) return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _persist() async {
