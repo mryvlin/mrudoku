@@ -35,4 +35,20 @@ void main() {
     final json = _state().toJson()..remove('maxHints');
     expect(GameState.fromJson(json).maxHints, 5);
   });
+
+  test('toJson/fromJson round-trips isWon so a completed game resumes as won', () {
+    final won = GameState(
+      board: Board.empty(),
+      solution: Board.empty(),
+      difficulty: Difficulty.easy,
+      isWon: true,
+    );
+    final restored = GameState.fromJson(won.toJson());
+    expect(restored.isWon, isTrue);
+  });
+
+  test('fromJson falls back to isWon: false for an older save missing the field', () {
+    final json = _state().toJson()..remove('isWon');
+    expect(GameState.fromJson(json).isWon, isFalse);
+  });
 }

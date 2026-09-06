@@ -102,6 +102,7 @@ class GameState {
         'hintsUsed': hintsUsed,
         'maxHints': maxHints,
         'notesMode': notesMode,
+        'isWon': isWon,
       };
 
   factory GameState.fromJson(Map<String, dynamic> json) => GameState(
@@ -115,5 +116,6 @@ class GameState {
         hintsUsed: json['hintsUsed'] as int? ?? 0,
         maxHints: json['maxHints'] as int? ?? 5,
         notesMode: json['notesMode'] as bool? ?? false,
+        isWon: json['isWon'] as bool? ?? false,
       );
 }
