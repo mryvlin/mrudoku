@@ -19,8 +19,10 @@ extension DifficultyX on Difficulty {
   }
 
   /// The hardest solving technique a puzzle of this difficulty is allowed to
-  /// require, used by the generator to reject puzzles that are too easy or
-  /// (for easy/medium) too hard. See `SolvingTechnique` in hint_engine.dart
+  /// require. The generator retries a hole layout that comes out needing
+  /// anything harder than this - most relevant at low clue counts (Hard,
+  /// Expert), where a random layout can easily force techniques well beyond
+  /// what the difficulty promises. See `SolvingTechnique` in hint_engine.dart
   /// for the ordering; these numbers must track its enum indices (checked by
   /// a test) but are duplicated as plain ints here so this model doesn't
   /// depend on the logic layer.

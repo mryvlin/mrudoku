@@ -37,16 +37,29 @@ class Generator {
 
     // 2. Dig holes (remove cells) while preserving a unique solution, aiming
     //    for the difficulty's target clue count. If the result turns out
-    //    logically easier than intended, retry with a different removal
-    //    order - a handful of attempts is enough in practice.
+    //    logically *harder* than the difficulty allows - a real risk at low
+    //    clue counts, where a random hole layout can easily force advanced
+    //    techniques or outright backtracking - retry with a different
+    //    removal order; a handful of attempts is enough in practice. Among
+    //    attempts that never land within the allowed range, keep the
+    //    least-too-hard one rather than whichever was dug last, so a
+    //    maxAttempts-exhausted fallback is still as close to correct as
+    //    possible instead of essentially random.
     const maxAttempts = 5;
     Board bestPuzzle = Board.fromValues(solutionGrid);
+    var bestRank = -1;
     for (var attempt = 0; attempt < maxAttempts; attempt++) {
       final puzzle = _digHoles(solutionGrid, difficulty, random);
-      bestPuzzle = puzzle;
-      if (difficulty == Difficulty.easy) break; // clue count alone suffices
-      final rating = HintEngine.rateDifficulty(puzzle);
-      if (rating.rank >= difficulty.maxAllowedTechniqueRank) break;
+      if (difficulty == Difficulty.easy) {
+        bestPuzzle = puzzle;
+        break; // clue count alone suffices
+      }
+      final rank = HintEngine.rateDifficulty(puzzle).rank;
+      if (attempt == 0 || rank < bestRank) {
+        bestPuzzle = puzzle;
+        bestRank = rank;
+      }
+      if (rank <= difficulty.maxAllowedTechniqueRank) break; // within the allowed range
     }
 
     return GeneratedPuzzle(puzzle: bestPuzzle, solution: solutionBoard, difficulty: difficulty);
