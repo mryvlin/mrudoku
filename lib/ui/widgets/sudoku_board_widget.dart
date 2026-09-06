@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../logic/hint_engine.dart';
 import '../../models/board.dart';
 import '../../models/settings.dart';
 import '../highlight_colors.dart';
@@ -20,6 +21,13 @@ class SudokuBoardWidget extends StatelessWidget {
   final bool showErrors;
   final void Function(int row, int col) onCellTap;
 
+  /// When the last hint was a hidden single, the specific unit (row, column
+  /// or box) whose analysis forced it - narrows peer highlighting down to
+  /// just that unit instead of the usual row+column+box, so the player sees
+  /// exactly which constraint did the work. `null` for every other
+  /// technique, where the full row+column+box view is what matters.
+  final HintUnitType? hintFocusUnit;
+
   const SudokuBoardWidget({
     super.key,
     required this.board,
@@ -30,6 +38,7 @@ class SudokuBoardWidget extends StatelessWidget {
     required this.highlightColor,
     required this.showErrors,
     required this.onCellTap,
+    this.hintFocusUnit,
   });
 
   bool get _hasSelection => selectedRow != null && selectedCol != null;
@@ -37,6 +46,20 @@ class SudokuBoardWidget extends StatelessWidget {
   bool _sameBox(int row, int col) {
     if (!_hasSelection) return false;
     return row ~/ kBoxSize == selectedRow! ~/ kBoxSize && col ~/ kBoxSize == selectedCol! ~/ kBoxSize;
+  }
+
+  bool _isPeer(int row, int col) {
+    if (!_hasSelection) return false;
+    switch (hintFocusUnit) {
+      case HintUnitType.row:
+        return row == selectedRow;
+      case HintUnitType.column:
+        return col == selectedCol;
+      case HintUnitType.box:
+        return _sameBox(row, col);
+      case null:
+        return row == selectedRow || col == selectedCol || _sameBox(row, col);
+    }
   }
 
   @override
@@ -61,10 +84,7 @@ class SudokuBoardWidget extends StatelessWidget {
             final cell = board.cellAt(row, col);
             final isSelected = _hasSelection && row == selectedRow && col == selectedCol;
 
-            final isPeer = highlightEnabled &&
-                _hasSelection &&
-                !isSelected &&
-                (row == selectedRow || col == selectedCol || _sameBox(row, col));
+            final isPeer = highlightEnabled && !isSelected && _isPeer(row, col);
 
             final isSameValue = highlightEnabled &&
                 !isSelected &&

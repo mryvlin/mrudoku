@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../logic/hint_engine.dart';
 import '../../logic/providers.dart';
 import '../../models/board.dart';
 import '../difficulty_labels.dart';
@@ -29,6 +30,14 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
   Timer? _timer;
   bool _endDialogShown = false;
 
+  /// The most recent hint, kept only so the board can narrow its peer
+  /// highlight down to the specific unit that forced a hidden single (see
+  /// [SudokuBoardWidget.hintFocusUnit]). Becomes irrelevant - and is ignored
+  /// - the moment selection moves away from the hinted cell.
+  HintStep? _lastHint;
+
+  late ScaffoldMessengerState _messenger;
+
   @override
   void initState() {
     super.initState();
@@ -39,9 +48,17 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _messenger = ScaffoldMessenger.of(context);
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
+    // Don't leave a hint banner dangling on whatever screen comes next.
+    _messenger.clearMaterialBanners();
     super.dispose();
   }
 
@@ -79,6 +96,17 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
     }
 
     final remainingCounts = _remainingCounts(gameState.board);
+
+    // Only apply the narrowed unit highlight while the hinted cell is still
+    // the one selected - once the player moves on, the old hint no longer
+    // means anything for whatever's selected now.
+    final lastHint = _lastHint;
+    final hintFocusUnit = (lastHint != null &&
+            lastHint.singleKind == SingleKind.hidden &&
+            gameState.selectedRow == lastHint.row &&
+            gameState.selectedCol == lastHint.col)
+        ? lastHint.hiddenUnit
+        : null;
 
     final scaffold = Scaffold(
       appBar: AppBar(
@@ -127,6 +155,7 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
                               highlightEnabled: settings.highlightEnabled,
                               highlightColor: settings.highlightColor,
                               showErrors: settings.showErrors,
+                              hintFocusUnit: hintFocusUnit,
                               onCellTap: (row, col) =>
                                   ref.read(gameControllerProvider.notifier).selectCell(row, col),
                             ),
@@ -182,10 +211,31 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
 
   Future<void> _useHint() async {
     final step = await ref.read(gameControllerProvider.notifier).useHint();
-    if (step != null && mounted) {
-      final message = describeHint(step, AppLocalizations.of(context)!);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-    }
+    if (step == null || !mounted) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _lastHint = step);
+
+    // A banner (not a snackbar) so the explanation - and the board's unit
+    // highlight while it's up - stay put until the player is done reading,
+    // rather than racing a timeout.
+    _messenger
+      ..clearMaterialBanners()
+      ..showMaterialBanner(
+        MaterialBanner(
+          leading: const Icon(Icons.lightbulb_outline),
+          content: Text(describeHint(step, l10n)),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _messenger.hideCurrentMaterialBanner();
+                if (mounted) setState(() => _lastHint = null);
+              },
+              child: Text(l10n.hintDismiss),
+            ),
+          ],
+        ),
+      );
   }
 
   Future<void> _leaveToMenu() async {

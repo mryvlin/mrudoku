@@ -7,6 +7,9 @@
   "resume": "Fortsetzen",
   "@resume": {"description": "Generic 'resume' word, used both as the pause-toggle tooltip and inside resumeButtonLabel."},
 
+  "hintDismiss": "Verstanden",
+  "@hintDismiss": {"description": "Dismiss action on the hint explanation banner."},
+
   "resumeButtonLabel": "Fortsetzen - {difficulty} ({time})",
   "@resumeButtonLabel": {
     "description": "Home screen button offering to continue a saved game.",

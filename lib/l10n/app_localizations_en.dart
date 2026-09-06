@@ -16,6 +16,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resume => 'Resume';
 
   @override
+  String get hintDismiss => 'Got it';
+
+  @override
   String resumeButtonLabel(String difficulty, String time) {
     return 'Resume - $difficulty ($time)';
   }

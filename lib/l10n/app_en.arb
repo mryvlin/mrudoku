@@ -3,6 +3,7 @@
 
   "settings": "Settings",
   "resume": "Resume",
+  "hintDismiss": "Got it",
   "resumeButtonLabel": "Resume - {difficulty} ({time})",
   "newGame": "New Game",
   "pause": "Pause",

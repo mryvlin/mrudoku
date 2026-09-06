@@ -110,6 +110,12 @@ abstract class AppLocalizations {
   /// **'Fortsetzen'**
   String get resume;
 
+  /// Dismiss action on the hint explanation banner.
+  ///
+  /// In de, this message translates to:
+  /// **'Verstanden'**
+  String get hintDismiss;
+
   /// Home screen button offering to continue a saved game.
   ///
   /// In de, this message translates to:
