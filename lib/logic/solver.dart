@@ -21,8 +21,7 @@ class Solver {
     for (var i = 0; i < kBoardSize; i++) {
       if (grid[row][i] == value || grid[i][col] == value) return false;
     }
-    final boxRow = (row ~/ kBoxSize) * kBoxSize;
-    final boxCol = (col ~/ kBoxSize) * kBoxSize;
+    final (boxRow, boxCol) = boxOrigin(row, col);
     for (var r = boxRow; r < boxRow + kBoxSize; r++) {
       for (var c = boxCol; c < boxCol + kBoxSize; c++) {
         if (grid[r][c] == value) return false;

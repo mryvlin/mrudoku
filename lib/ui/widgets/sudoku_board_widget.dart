@@ -45,7 +45,7 @@ class SudokuBoardWidget extends StatelessWidget {
 
   bool _sameBox(int row, int col) {
     if (!_hasSelection) return false;
-    return row ~/ kBoxSize == selectedRow! ~/ kBoxSize && col ~/ kBoxSize == selectedCol! ~/ kBoxSize;
+    return sameBox(row, col, selectedRow!, selectedCol!);
   }
 
   bool _isPeer(int row, int col) {

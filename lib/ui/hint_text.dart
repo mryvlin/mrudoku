@@ -25,7 +25,7 @@ String _unitLabel(HintStep step, AppLocalizations l10n) {
     case HintUnitType.column:
       return l10n.unitColumn(step.col + 1);
     case HintUnitType.box:
-      return l10n.unitBox((step.row ~/ kBoxSize) * kBoxSize + (step.col ~/ kBoxSize) + 1);
+      return l10n.unitBox(boxIndexOf(step.row, step.col) + 1);
   }
 }
 

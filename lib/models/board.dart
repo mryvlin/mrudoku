@@ -6,6 +6,19 @@ const int kBoardSize = 9;
 /// Side length of a single 3x3 box.
 const int kBoxSize = 3;
 
+/// The (row, col) of the top-left cell of the 3x3 box containing (row, col).
+/// The single place this arithmetic lives - solver.dart, validator.dart,
+/// GameController and the board/hint UI all used to compute it separately.
+(int, int) boxOrigin(int row, int col) => (row ~/ kBoxSize * kBoxSize, col ~/ kBoxSize * kBoxSize);
+
+/// True if (r1, c1) and (r2, c2) fall in the same 3x3 box.
+bool sameBox(int r1, int c1, int r2, int c2) =>
+    r1 ~/ kBoxSize == r2 ~/ kBoxSize && c1 ~/ kBoxSize == c2 ~/ kBoxSize;
+
+/// 0-based index (0-8, left-to-right then top-to-bottom) of the 3x3 box
+/// containing (row, col).
+int boxIndexOf(int row, int col) => (row ~/ kBoxSize) * kBoxSize + (col ~/ kBoxSize);
+
 /// Immutable 9x9 Sudoku board made up of [Cell]s.
 ///
 /// Pure Dart, no Flutter dependency, so it can be unit-tested and reused by

@@ -369,8 +369,7 @@ class GameController extends Notifier<GameState?> {
     for (var r = 0; r < kBoardSize; r++) {
       stripAt(r, col);
     }
-    final boxRow = (row ~/ kBoxSize) * kBoxSize;
-    final boxCol = (col ~/ kBoxSize) * kBoxSize;
+    final (boxRow, boxCol) = boxOrigin(row, col);
     for (var r = boxRow; r < boxRow + kBoxSize; r++) {
       for (var c = boxCol; c < boxCol + kBoxSize; c++) {
         stripAt(r, c);

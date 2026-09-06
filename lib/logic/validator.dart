@@ -18,8 +18,7 @@ class Validator {
     for (var r = 0; r < kBoardSize; r++) {
       if (r != row && board.cellAt(r, col).value == value) conflicts.add((r, col));
     }
-    final boxRow = (row ~/ kBoxSize) * kBoxSize;
-    final boxCol = (col ~/ kBoxSize) * kBoxSize;
+    final (boxRow, boxCol) = boxOrigin(row, col);
     for (var r = boxRow; r < boxRow + kBoxSize; r++) {
       for (var c = boxCol; c < boxCol + kBoxSize; c++) {
         if ((r != row || c != col) && board.cellAt(r, c).value == value) conflicts.add((r, c));
