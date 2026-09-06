@@ -23,6 +23,7 @@ class SettingsController extends Notifier<Settings> {
 
   Future<void> setErrorLimitEnabled(bool value) => _update((s) => s.copyWith(errorLimitEnabled: value));
   Future<void> setMaxMistakes(int value) => _update((s) => s.copyWith(maxMistakes: value));
+  Future<void> setMaxHints(int value) => _update((s) => s.copyWith(maxHints: value));
   Future<void> setHighlightEnabled(bool value) => _update((s) => s.copyWith(highlightEnabled: value));
   Future<void> setHighlightColor(HighlightColor value) =>
       _update((s) => s.copyWith(highlightColor: value));

@@ -194,6 +194,12 @@ abstract class AppLocalizations {
   /// **'Maximale Fehler'**
   String get maxMistakesTitle;
 
+  /// Label above the max-hints slider.
+  ///
+  /// In de, this message translates to:
+  /// **'Maximale Hinweise'**
+  String get maxHintsTitle;
+
   /// Settings switch title.
   ///
   /// In de, this message translates to:

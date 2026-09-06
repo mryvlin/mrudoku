@@ -64,6 +64,9 @@
   "maxMistakesTitle": "Maximale Fehler",
   "@maxMistakesTitle": {"description": "Label above the max-mistakes slider."},
 
+  "maxHintsTitle": "Maximale Hinweise",
+  "@maxHintsTitle": {"description": "Label above the max-hints slider."},
+
   "showErrorsTitle": "Falsche Zahlen anzeigen",
   "@showErrorsTitle": {"description": "Settings switch title."},
   "showErrorsSubtitle": "Markiert falsch eingetragene Zahlen farblich",

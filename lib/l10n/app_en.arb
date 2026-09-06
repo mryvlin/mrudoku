@@ -19,6 +19,7 @@
   "errorLimitSubtitle": "Game ends after too many mistakes",
 
   "maxMistakesTitle": "Maximum mistakes",
+  "maxHintsTitle": "Maximum hints",
 
   "showErrorsTitle": "Show wrong numbers",
   "showErrorsSubtitle": "Marks incorrectly entered numbers in color",

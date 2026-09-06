@@ -64,6 +64,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get maxMistakesTitle => 'Maximale Fehler';
 
   @override
+  String get maxHintsTitle => 'Maximale Hinweise';
+
+  @override
   String get showErrorsTitle => 'Falsche Zahlen anzeigen';
 
   @override

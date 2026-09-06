@@ -56,7 +56,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     container = ProviderContainer();
     controller = container.read(gameControllerProvider.notifier);
-    await controller.startNewGame(Difficulty.easy, maxMistakes: 3, errorLimitEnabled: true);
+    await controller.startNewGame(Difficulty.easy, maxMistakes: 3, errorLimitEnabled: true, maxHints: 5);
   });
 
   tearDown(() => container.dispose());

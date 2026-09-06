@@ -31,6 +31,7 @@ Future<ProviderContainer> _startedContainer(WidgetTester tester) async {
       Difficulty.easy,
       maxMistakes: 3,
       errorLimitEnabled: true,
+      maxHints: 5,
     ),
   );
 

@@ -41,4 +41,18 @@ void main() {
     expect(Settings.fromJson(const {}).locale, AppLocale.system);
     expect(Settings.fromJson(const {'locale': 'fr'}).locale, AppLocale.system);
   });
+
+  test('defaults to 5 max hints', () {
+    expect(const Settings().maxHints, 5);
+  });
+
+  test('toJson/fromJson round-trips the chosen max hints', () {
+    const settings = Settings(maxHints: 8);
+    final restored = Settings.fromJson(settings.toJson());
+    expect(restored.maxHints, 8);
+  });
+
+  test('fromJson falls back to 5 max hints when missing', () {
+    expect(Settings.fromJson(const {}).maxHints, 5);
+  });
 }

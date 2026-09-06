@@ -64,6 +64,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maxMistakesTitle => 'Maximum mistakes';
 
   @override
+  String get maxHintsTitle => 'Maximum hints';
+
+  @override
   String get showErrorsTitle => 'Show wrong numbers';
 
   @override

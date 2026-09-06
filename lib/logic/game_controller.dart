@@ -43,6 +43,7 @@ class GameController extends Notifier<GameState?> {
     Difficulty difficulty, {
     required int maxMistakes,
     required bool errorLimitEnabled,
+    required int maxHints,
   }) async {
     isGenerating = true;
     state = null;
@@ -53,6 +54,7 @@ class GameController extends Notifier<GameState?> {
       difficulty: difficulty,
       maxMistakes: maxMistakes,
       errorLimitEnabled: errorLimitEnabled,
+      maxHints: maxHints,
     );
     isGenerating = false;
     await _persist();

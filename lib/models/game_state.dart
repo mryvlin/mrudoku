@@ -1,9 +1,6 @@
 import 'board.dart';
 import 'difficulty.dart';
 
-/// Maximum number of hints available per game.
-const int kMaxHints = 3;
-
 /// Full state of one Sudoku game in progress: the mutable board, the
 /// solution used for validation/hints, and all the bookkeeping the UI needs
 /// (timer, mistakes, hints, notes mode, undo/redo, selection).
@@ -19,6 +16,7 @@ class GameState {
   final int maxMistakes;
   final bool errorLimitEnabled;
   final int hintsUsed;
+  final int maxHints;
   final bool isPaused;
   final bool isWon;
   final bool notesMode;
@@ -36,6 +34,7 @@ class GameState {
     this.maxMistakes = 3,
     this.errorLimitEnabled = true,
     this.hintsUsed = 0,
+    this.maxHints = 5,
     this.isPaused = false,
     this.isWon = false,
     this.notesMode = false,
@@ -46,7 +45,7 @@ class GameState {
   });
 
   bool get hasSelection => selectedRow != null && selectedCol != null;
-  int get hintsRemaining => (kMaxHints - hintsUsed).clamp(0, kMaxHints);
+  int get hintsRemaining => (maxHints - hintsUsed).clamp(0, maxHints);
   bool get isGameOver => errorLimitEnabled && mistakes >= maxMistakes;
   bool get canUndo => undoStack.isNotEmpty;
   bool get canRedo => redoStack.isNotEmpty;
@@ -60,6 +59,7 @@ class GameState {
     int? maxMistakes,
     bool? errorLimitEnabled,
     int? hintsUsed,
+    int? maxHints,
     bool? isPaused,
     bool? isWon,
     bool? notesMode,
@@ -78,6 +78,7 @@ class GameState {
       maxMistakes: maxMistakes ?? this.maxMistakes,
       errorLimitEnabled: errorLimitEnabled ?? this.errorLimitEnabled,
       hintsUsed: hintsUsed ?? this.hintsUsed,
+      maxHints: maxHints ?? this.maxHints,
       isPaused: isPaused ?? this.isPaused,
       isWon: isWon ?? this.isWon,
       notesMode: notesMode ?? this.notesMode,
@@ -99,6 +100,7 @@ class GameState {
         'maxMistakes': maxMistakes,
         'errorLimitEnabled': errorLimitEnabled,
         'hintsUsed': hintsUsed,
+        'maxHints': maxHints,
         'notesMode': notesMode,
       };
 
@@ -111,6 +113,7 @@ class GameState {
         maxMistakes: json['maxMistakes'] as int? ?? 3,
         errorLimitEnabled: json['errorLimitEnabled'] as bool? ?? true,
         hintsUsed: json['hintsUsed'] as int? ?? 0,
+        maxHints: json['maxHints'] as int? ?? 5,
         notesMode: json['notesMode'] as bool? ?? false,
       );
 }

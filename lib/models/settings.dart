@@ -17,6 +17,7 @@ enum HighlightColor { red, orange, green, blue, purple, teal }
 class Settings {
   final bool errorLimitEnabled;
   final int maxMistakes;
+  final int maxHints;
   final bool highlightEnabled;
   final HighlightColor highlightColor;
 
@@ -31,6 +32,7 @@ class Settings {
   const Settings({
     this.errorLimitEnabled = true,
     this.maxMistakes = 3,
+    this.maxHints = 5,
     this.highlightEnabled = true,
     this.highlightColor = HighlightColor.red,
     this.showErrors = true,
@@ -42,6 +44,7 @@ class Settings {
   Settings copyWith({
     bool? errorLimitEnabled,
     int? maxMistakes,
+    int? maxHints,
     bool? highlightEnabled,
     HighlightColor? highlightColor,
     bool? showErrors,
@@ -52,6 +55,7 @@ class Settings {
     return Settings(
       errorLimitEnabled: errorLimitEnabled ?? this.errorLimitEnabled,
       maxMistakes: maxMistakes ?? this.maxMistakes,
+      maxHints: maxHints ?? this.maxHints,
       highlightEnabled: highlightEnabled ?? this.highlightEnabled,
       highlightColor: highlightColor ?? this.highlightColor,
       showErrors: showErrors ?? this.showErrors,
@@ -64,6 +68,7 @@ class Settings {
   Map<String, dynamic> toJson() => {
         'errorLimitEnabled': errorLimitEnabled,
         'maxMistakes': maxMistakes,
+        'maxHints': maxHints,
         'highlightEnabled': highlightEnabled,
         'highlightColor': highlightColor.name,
         'showErrors': showErrors,
@@ -75,6 +80,7 @@ class Settings {
   factory Settings.fromJson(Map<String, dynamic> json) => Settings(
         errorLimitEnabled: json['errorLimitEnabled'] as bool? ?? true,
         maxMistakes: json['maxMistakes'] as int? ?? 3,
+        maxHints: json['maxHints'] as int? ?? 5,
         highlightEnabled: json['highlightEnabled'] as bool? ?? true,
         highlightColor: HighlightColor.values.firstWhere(
           (c) => c.name == json['highlightColor'],

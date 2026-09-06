@@ -40,6 +40,17 @@ class SettingsScreen extends ConsumerWidget {
                 onChanged: (value) => controller.setMaxMistakes(value.round()),
               ),
             ),
+          ListTile(
+            title: Text(l10n.maxHintsTitle),
+            subtitle: Slider(
+              value: settings.maxHints.toDouble(),
+              min: 0,
+              max: 10,
+              divisions: 10,
+              label: '${settings.maxHints}',
+              onChanged: (value) => controller.setMaxHints(value.round()),
+            ),
+          ),
           SwitchListTile(
             title: Text(l10n.showErrorsTitle),
             subtitle: Text(l10n.showErrorsSubtitle),

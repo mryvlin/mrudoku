@@ -116,6 +116,7 @@ class HomeScreen extends ConsumerWidget {
           difficulty,
           maxMistakes: settings.maxMistakes,
           errorLimitEnabled: settings.errorLimitEnabled,
+          maxHints: settings.maxHints,
         );
   }
 }
