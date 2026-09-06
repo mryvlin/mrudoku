@@ -45,19 +45,26 @@ class GameController extends Notifier<GameState?> {
     required bool errorLimitEnabled,
     required int maxHints,
   }) async {
+    // Guards against a second generation racing this one - e.g. a
+    // double-tapped difficulty button on Home - which would otherwise let
+    // whichever isolate finishes last silently overwrite the other's state.
+    if (isGenerating) return;
     isGenerating = true;
     state = null;
-    final generated = await PuzzleGenerationService.generate(difficulty);
-    state = GameState(
-      board: generated.puzzle,
-      solution: generated.solution,
-      difficulty: difficulty,
-      maxMistakes: maxMistakes,
-      errorLimitEnabled: errorLimitEnabled,
-      maxHints: maxHints,
-    );
-    isGenerating = false;
-    await _persist();
+    try {
+      final generated = await PuzzleGenerationService.generate(difficulty);
+      state = GameState(
+        board: generated.puzzle,
+        solution: generated.solution,
+        difficulty: difficulty,
+        maxMistakes: maxMistakes,
+        errorLimitEnabled: errorLimitEnabled,
+        maxHints: maxHints,
+      );
+      await _persist();
+    } finally {
+      isGenerating = false;
+    }
   }
 
   void restore(GameState saved) => state = saved;

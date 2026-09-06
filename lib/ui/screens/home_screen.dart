@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,11 +14,22 @@ import 'settings_screen.dart';
 
 /// Landing screen: offers to continue a saved game (if any) and lets the
 /// player start a new one at a chosen difficulty.
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  // Sits true from the first tap on "Continue"/a difficulty button until
+  // GameScreen has been pushed, so a double-tap (or tapping a second
+  // difficulty before the first finishes generating) can't push two
+  // GameScreen routes or race two concurrent generations.
+  bool _navigating = false;
+
+  @override
+  Widget build(BuildContext context) {
     final savedGame = ref.watch(savedGameProvider);
     final settings = ref.watch(settingsControllerProvider);
     final leaderboard = ref.watch(leaderboardControllerProvider);
@@ -58,7 +67,7 @@ class HomeScreen extends ConsumerWidget {
                         : Padding(
                             padding: const EdgeInsets.only(bottom: 28),
                             child: FilledButton.icon(
-                              onPressed: () => _continueGame(context, ref, saved),
+                              onPressed: _navigating ? null : () => _continueGame(saved),
                               icon: const Icon(Icons.play_arrow),
                               label: Text(
                                 l10n.resumeButtonLabel(
@@ -80,7 +89,7 @@ class HomeScreen extends ConsumerWidget {
                     children: [
                       for (final difficulty in Difficulty.values)
                         OutlinedButton(
-                          onPressed: () => _startNewGame(context, ref, difficulty, settings),
+                          onPressed: _navigating ? null : () => _startNewGame(difficulty, settings),
                           child: Text(difficulty.label(l10n)),
                         ),
                     ],
@@ -96,27 +105,36 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _continueGame(BuildContext context, WidgetRef ref, GameState saved) async {
-    ref.read(gameControllerProvider.notifier).restore(saved);
-    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GameScreen()));
-  }
+  // Both methods below guard on (and immediately set) `_navigating` before
+  // touching the Navigator, so a double-tap - or tapping a second
+  // difficulty button before the first generation finishes - can't push a
+  // second GameScreen route or race a second startNewGame call. The flag
+  // clears once the pushed route is popped, i.e. when the player is back on
+  // Home.
 
-  Future<void> _startNewGame(
-    BuildContext context,
-    WidgetRef ref,
-    Difficulty difficulty,
-    Settings settings,
-  ) async {
-    final navigator = Navigator.of(context);
+  Future<void> _continueGame(GameState saved) async {
+    if (_navigating) return;
+    setState(() => _navigating = true);
+    ref.read(gameControllerProvider.notifier).restore(saved);
     // Navigate immediately; GameScreen shows a loading spinner while the
     // puzzle is generated on a background isolate (see
     // PuzzleGenerationService), so the UI never blocks.
-    unawaited(navigator.push(MaterialPageRoute(builder: (_) => const GameScreen())));
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GameScreen()));
+    if (mounted) setState(() => _navigating = false);
+  }
+
+  Future<void> _startNewGame(Difficulty difficulty, Settings settings) async {
+    if (_navigating) return;
+    setState(() => _navigating = true);
+    final navigator = Navigator.of(context);
+    final pushed = navigator.push(MaterialPageRoute(builder: (_) => const GameScreen()));
     await ref.read(gameControllerProvider.notifier).startNewGame(
           difficulty,
           maxMistakes: settings.maxMistakes,
           errorLimitEnabled: settings.errorLimitEnabled,
           maxHints: settings.maxHints,
         );
+    await pushed;
+    if (mounted) setState(() => _navigating = false);
   }
 }

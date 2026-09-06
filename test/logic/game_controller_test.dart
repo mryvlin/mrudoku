@@ -66,6 +66,20 @@ void main() {
     expect(Validator.isSolved(state().solution), isTrue);
   });
 
+  test('a second concurrent startNewGame call is ignored while one is already generating', () async {
+    // Kick off two overlapping calls (as a double-tapped difficulty button
+    // on Home would) without awaiting the first.
+    final first = controller.startNewGame(Difficulty.expert, maxMistakes: 3, errorLimitEnabled: true, maxHints: 5);
+    final second = controller.startNewGame(Difficulty.medium, maxMistakes: 1, errorLimitEnabled: true, maxHints: 1);
+
+    await Future.wait([first, second]);
+
+    // The second call should have been a no-op, so the first call's
+    // settings win rather than whichever isolate happened to finish last.
+    expect(state().difficulty, Difficulty.expert);
+    expect(state().maxHints, 5);
+  });
+
   test('entering the correct value updates the board and keeps mistakes at 0', () {
     final pos = _firstEmptyCell(state());
     controller.selectCell(pos.$1, pos.$2);
