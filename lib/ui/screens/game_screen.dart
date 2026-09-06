@@ -162,22 +162,36 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
                     ),
                   ),
                   const SizedBox(height: 12),
-                  GameToolbarWidget(
-                    canUndo: gameState.canUndo,
-                    canRedo: gameState.canRedo,
-                    notesMode: gameState.notesMode,
-                    hintsRemaining: gameState.hintsRemaining,
-                    onUndo: () => ref.read(gameControllerProvider.notifier).undo(),
-                    onRedo: () => ref.read(gameControllerProvider.notifier).redo(),
-                    onToggleNotes: () => ref.read(gameControllerProvider.notifier).toggleNotesMode(),
-                    onAutoFillNotes: () => ref.read(gameControllerProvider.notifier).autoFillNotes(),
-                    onHint: _useHint,
-                  ),
-                  const SizedBox(height: 12),
-                  NumberPadWidget(
-                    remainingCounts: remainingCounts,
-                    onNumberTap: (value) => ref.read(gameControllerProvider.notifier).inputNumber(value),
-                    onEraseTap: () => ref.read(gameControllerProvider.notifier).eraseSelected(),
+                  // Undo/redo/notes/hint all already no-op while paused (see
+                  // GameController._locked), but the board itself is hidden
+                  // behind _PausedOverlay above - disable and dim these too
+                  // so the whole screen reads as paused, not just the board.
+                  IgnorePointer(
+                    ignoring: gameState.isPaused,
+                    child: Opacity(
+                      opacity: gameState.isPaused ? 0.4 : 1,
+                      child: Column(
+                        children: [
+                          GameToolbarWidget(
+                            canUndo: gameState.canUndo,
+                            canRedo: gameState.canRedo,
+                            notesMode: gameState.notesMode,
+                            hintsRemaining: gameState.hintsRemaining,
+                            onUndo: () => ref.read(gameControllerProvider.notifier).undo(),
+                            onRedo: () => ref.read(gameControllerProvider.notifier).redo(),
+                            onToggleNotes: () => ref.read(gameControllerProvider.notifier).toggleNotesMode(),
+                            onAutoFillNotes: () => ref.read(gameControllerProvider.notifier).autoFillNotes(),
+                            onHint: _useHint,
+                          ),
+                          const SizedBox(height: 12),
+                          NumberPadWidget(
+                            remainingCounts: remainingCounts,
+                            onNumberTap: (value) => ref.read(gameControllerProvider.notifier).inputNumber(value),
+                            onEraseTap: () => ref.read(gameControllerProvider.notifier).eraseSelected(),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),

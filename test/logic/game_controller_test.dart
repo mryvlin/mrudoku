@@ -239,6 +239,62 @@ void main() {
     expect(state().board.cellAt(pos.$1, pos.$2).value, correctValue);
   });
 
+  group('while paused', () {
+    setUp(() => controller.togglePause());
+
+    test('useHint is a no-op', () async {
+      final before = state().hintsRemaining;
+
+      final step = await controller.useHint();
+
+      expect(step, isNull);
+      expect(state().hintsRemaining, before);
+    });
+
+    test('undo and redo are no-ops', () {
+      final pos = _firstEmptyCell(state());
+      controller.togglePause(); // unpause just long enough to make a move
+      controller.selectCell(pos.$1, pos.$2);
+      controller.inputNumber(state().solution.cellAt(pos.$1, pos.$2).value);
+      controller.togglePause(); // and re-pause before trying to undo it
+
+      controller.undo();
+      expect(state().board.cellAt(pos.$1, pos.$2).value, isNot(0));
+
+      controller.togglePause();
+      controller.undo();
+      controller.togglePause();
+      controller.redo();
+      expect(state().board.cellAt(pos.$1, pos.$2).value, 0);
+    });
+
+    test('autoFillNotes is a no-op', () {
+      controller.autoFillNotes();
+
+      for (var r = 0; r < 9; r++) {
+        for (var c = 0; c < 9; c++) {
+          expect(state().board.cellAt(r, c).notes, isEmpty);
+        }
+      }
+    });
+
+    test('toggleNotesMode is a no-op', () {
+      final before = state().notesMode;
+
+      controller.toggleNotesMode();
+
+      expect(state().notesMode, before);
+    });
+
+    test('togglePause itself still works, to resume', () {
+      expect(state().isPaused, isTrue);
+
+      controller.togglePause();
+
+      expect(state().isPaused, isFalse);
+    });
+  });
+
   test('a hint reduces the remaining hint count and places a correct value', () async {
     final before = state().hintsRemaining;
 

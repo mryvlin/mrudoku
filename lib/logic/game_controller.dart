@@ -81,15 +81,24 @@ class GameController extends Notifier<GameState?> {
   /// throttled save is lost.
   Future<void> saveNow() => _persist();
 
+  /// True once [s] shouldn't allow any gameplay action to mutate the board,
+  /// notes, hint count or undo/redo stacks: paused, won, or lost. Every
+  /// action below other than `togglePause` (which must still work *while*
+  /// paused, to resume) checks this first via the `s == null || _locked(s)`
+  /// pattern, in one place, so a future action can't repeat the
+  /// pause-bypass bug where hints/undo/redo/notes stayed live while the
+  /// board was hidden behind the paused overlay.
+  bool _locked(GameState s) => s.isPaused || s.isWon || s.isGameOver;
+
   void selectCell(int row, int col) {
     final s = state;
-    if (s == null || s.isGameOver || s.isWon) return;
+    if (s == null || _locked(s)) return;
     state = s.copyWith(selectedRow: row, selectedCol: col);
   }
 
   void toggleNotesMode() {
     final s = state;
-    if (s == null) return;
+    if (s == null || _locked(s)) return;
     state = s.copyWith(notesMode: !s.notesMode);
   }
 
@@ -102,7 +111,7 @@ class GameController extends Notifier<GameState?> {
 
   void tick() {
     final s = state;
-    if (s == null || s.isPaused || s.isWon || s.isGameOver) return;
+    if (s == null || _locked(s)) return;
     state = s.copyWith(elapsedSeconds: s.elapsedSeconds + 1);
     if (++_ticksSinceSave >= 5) {
       _ticksSinceSave = 0;
@@ -112,7 +121,7 @@ class GameController extends Notifier<GameState?> {
 
   void inputNumber(int value) {
     final s = state;
-    if (s == null || s.isGameOver || s.isWon || s.isPaused || !s.hasSelection) return;
+    if (s == null || _locked(s) || !s.hasSelection) return;
     final row = s.selectedRow!, col = s.selectedCol!;
     final cell = s.board.cellAt(row, col);
     if (cell.isGiven) return;
@@ -172,7 +181,7 @@ class GameController extends Notifier<GameState?> {
 
   void eraseSelected() {
     final s = state;
-    if (s == null || s.isGameOver || s.isWon || s.isPaused || !s.hasSelection) return;
+    if (s == null || _locked(s) || !s.hasSelection) return;
     final row = s.selectedRow!, col = s.selectedCol!;
     final cell = s.board.cellAt(row, col);
     if (cell.isGiven || (cell.isEmpty && cell.notes.isEmpty)) return;
@@ -187,7 +196,7 @@ class GameController extends Notifier<GameState?> {
 
   void undo() {
     final s = state;
-    if (s == null || !s.canUndo) return;
+    if (s == null || _locked(s) || !s.canUndo) return;
     final previous = s.undoStack.last;
     state = s.copyWith(
       board: previous,
@@ -199,7 +208,7 @@ class GameController extends Notifier<GameState?> {
 
   void redo() {
     final s = state;
-    if (s == null || !s.canRedo) return;
+    if (s == null || _locked(s) || !s.canRedo) return;
     final next = s.redoStack.last;
     state = s.copyWith(
       board: next,
@@ -213,7 +222,7 @@ class GameController extends Notifier<GameState?> {
   /// legal candidates, so the player doesn't have to note them by hand.
   void autoFillNotes() {
     final s = state;
-    if (s == null || s.isGameOver || s.isWon) return;
+    if (s == null || _locked(s)) return;
     final candidates = Candidates.forBoard(s.board);
     var newBoard = s.board;
     for (var r = 0; r < kBoardSize; r++) {
@@ -234,7 +243,7 @@ class GameController extends Notifier<GameState?> {
   /// (no hints left, or game finished/paused).
   Future<HintStep?> useHint() async {
     final s = state;
-    if (s == null || s.isGameOver || s.isWon || s.hintsRemaining <= 0) return null;
+    if (s == null || _locked(s) || s.hintsRemaining <= 0) return null;
 
     final logicalStep = HintEngine.nextLogicalStep(s.board);
     final HintStep step;
