@@ -19,6 +19,12 @@ class SudokuCellWidget extends StatelessWidget {
   /// have that digit entered as a value yet.
   final int highlightedValue;
 
+  /// Tint used for selection/peer/same-value/matching-note emphasis,
+  /// resolved by the caller from the user's chosen [HighlightColor] (see
+  /// `ui/highlight_colors.dart`) - kept separate from `colorScheme.primary`
+  /// so it can be tuned independently of the app's overall theme.
+  final Color highlightColor;
+
   const SudokuCellWidget({
     super.key,
     required this.cell,
@@ -29,20 +35,15 @@ class SudokuCellWidget extends StatelessWidget {
     required this.isThickRightBorder,
     required this.isThickBottomBorder,
     required this.onTap,
+    required this.highlightColor,
     this.highlightedValue = 0,
   });
-
-  /// Highlight tint used for selection/peer/same-value/matching-note
-  /// emphasis. Kept separate from `colorScheme.primary` (which still drives
-  /// the app's overall theme) so it can be tuned independently.
-  static Color _highlightColor(ThemeData theme) =>
-      theme.brightness == Brightness.dark ? Colors.red.shade300 : Colors.red.shade700;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final highlight = _highlightColor(theme);
+    final highlight = highlightColor;
 
     final hasMatchingNote =
         highlightedValue != 0 && cell.isEmpty && cell.notes.contains(highlightedValue);
@@ -84,7 +85,7 @@ class SudokuCellWidget extends StatelessWidget {
     final color = isError
         ? theme.colorScheme.error
         : isHighlighted
-            ? _highlightColor(theme)
+            ? highlightColor
             : cell.isGiven
                 ? theme.colorScheme.onSurface
                 : theme.colorScheme.primary;
@@ -105,7 +106,7 @@ class SudokuCellWidget extends StatelessWidget {
       fontSize: 12,
     );
     final matchingStyle = normalStyle?.copyWith(
-      color: _highlightColor(theme),
+      color: highlightColor,
       fontWeight: FontWeight.w800,
     );
     return Padding(
@@ -131,7 +132,7 @@ class SudokuCellWidget extends StatelessWidget {
                           return Container(
                             padding: const EdgeInsets.symmetric(horizontal: 1),
                             decoration: BoxDecoration(
-                              border: Border.all(color: _highlightColor(theme), width: 1),
+                              border: Border.all(color: highlightColor, width: 1),
                               borderRadius: BorderRadius.circular(3),
                             ),
                             child: text,

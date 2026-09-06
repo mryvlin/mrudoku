@@ -122,6 +122,7 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
                               selectedRow: gameState.selectedRow,
                               selectedCol: gameState.selectedCol,
                               highlightEnabled: settings.highlightEnabled,
+                              highlightColor: settings.highlightColor,
                               showErrors: settings.showErrors,
                               onCellTap: (row, col) =>
                                   ref.read(gameControllerProvider.notifier).selectCell(row, col),

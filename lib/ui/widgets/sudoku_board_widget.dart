@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../models/board.dart';
+import '../../models/settings.dart';
+import '../highlight_colors.dart';
 import 'sudoku_cell_widget.dart';
 
 /// Renders the full 9x9 grid, delegating each cell to [SudokuCellWidget] and
@@ -14,6 +16,7 @@ class SudokuBoardWidget extends StatelessWidget {
   final int? selectedRow;
   final int? selectedCol;
   final bool highlightEnabled;
+  final HighlightColor highlightColor;
   final bool showErrors;
   final void Function(int row, int col) onCellTap;
 
@@ -24,6 +27,7 @@ class SudokuBoardWidget extends StatelessWidget {
     required this.selectedRow,
     required this.selectedCol,
     required this.highlightEnabled,
+    required this.highlightColor,
     required this.showErrors,
     required this.onCellTap,
   });
@@ -38,6 +42,7 @@ class SudokuBoardWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selectedValue = _hasSelection ? board.cellAt(selectedRow!, selectedCol!).value : 0;
+    final resolvedHighlight = highlightColor.resolve(Theme.of(context).brightness);
 
     return AspectRatio(
       aspectRatio: 1,
@@ -81,6 +86,7 @@ class SudokuBoardWidget extends StatelessWidget {
               isThickRightBorder: col % kBoxSize == kBoxSize - 1 && col != kBoardSize - 1,
               isThickBottomBorder: row % kBoxSize == kBoxSize - 1 && row != kBoardSize - 1,
               highlightedValue: highlightEnabled ? selectedValue : 0,
+              highlightColor: resolvedHighlight,
               onTap: () => onCellTap(row, col),
             );
           },

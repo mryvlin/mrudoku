@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../logic/providers.dart';
 import '../../models/settings.dart';
+import '../highlight_colors.dart';
 
 /// Settings page: error limit on/off (with the limit itself), whether wrong
 /// entries are visually marked, highlighting on/off, sound, and theme.
@@ -48,6 +49,23 @@ class SettingsScreen extends ConsumerWidget {
             value: settings.highlightEnabled,
             onChanged: controller.setHighlightEnabled,
           ),
+          ListTile(
+            title: const Text('Hervorhebungsfarbe'),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Wrap(
+                spacing: 12,
+                children: [
+                  for (final color in HighlightColor.values)
+                    _HighlightColorSwatch(
+                      color: color,
+                      selected: settings.highlightColor == color,
+                      onTap: () => controller.setHighlightColor(color),
+                    ),
+                ],
+              ),
+            ),
+          ),
           SwitchListTile(
             title: const Text('Sound'),
             subtitle: const Text('Feedback-Töne und Vibration bei Eingaben'),
@@ -71,6 +89,40 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// One tappable color circle in the highlight-color picker; shows a check
+/// mark when it is the current selection.
+class _HighlightColorSwatch extends StatelessWidget {
+  final HighlightColor color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _HighlightColorSwatch({required this.color, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: color.label,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color.swatch,
+            border: selected
+                ? Border.all(color: Theme.of(context).colorScheme.onSurface, width: 2)
+                : null,
+          ),
+          alignment: Alignment.center,
+          child: selected ? const Icon(Icons.check, color: Colors.white, size: 18) : null,
+        ),
       ),
     );
   }
