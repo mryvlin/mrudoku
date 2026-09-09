@@ -14,7 +14,7 @@ void showWinCelebration(BuildContext context) {
   late OverlayEntry entry;
   entry = OverlayEntry(
     builder: (context) => IgnorePointer(
-      child: GameWidget(game: _ConfettiGame(onFinished: () => entry.remove())),
+      child: GameWidget(game: _ConfettiGame(onFinished: () => entry.mounted ? entry.remove() : null)),
     ),
   );
   overlay.insert(entry);
