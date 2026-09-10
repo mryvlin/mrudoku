@@ -58,6 +58,7 @@
   "redoLabel": "Redo",
   "notesLabel": "Notes",
   "autoNotesLabel": "Auto-Notes",
+  "autoSolveLabel": "Auto-Solve",
   "hintLabel": "Hint ({count})",
 
   "leaderboardTitle": "Leaderboard",

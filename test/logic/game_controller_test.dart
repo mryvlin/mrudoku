@@ -359,6 +359,150 @@ void main() {
     }
   });
 
+  group('auto-solve singles', () {
+    // The cascade paces itself 50ms apart (see
+    // GameController._autoSolveStepDelay) so the player can see each cell
+    // appear - real wall-clock time, since these are plain `test()`s, not
+    // `testWidgets()` with a controllable fake clock. This comfortably
+    // covers the 1-2 steps every fixture below needs.
+    Future<void> waitForAutoSolve() => Future<void>.delayed(const Duration(milliseconds: 200));
+
+    // Row 0 is given as [5,3,4,6,7,8,9,_,_] with everything else on the
+    // board empty, so - looking at row 0 alone, since nothing else
+    // constrains columns 7/8 or their box - (0,7) and (0,8) both start
+    // with exactly candidates {1, 2}: not yet forced individually, but
+    // placing either one removes it from the row and forces the other.
+    GameState twoCellFixture({bool autoSolveSingles = false}) {
+      final values = List.generate(9, (_) => List.filled(9, 0));
+      values[0] = [5, 3, 4, 6, 7, 8, 9, 0, 0];
+      final solutionValues = List.generate(9, (_) => List.filled(9, 0));
+      solutionValues[0] = [5, 3, 4, 6, 7, 8, 9, 1, 2];
+
+      return GameState(
+        board: Board.fromValues(values),
+        solution: Board.fromValues(solutionValues),
+        difficulty: Difficulty.easy,
+        autoSolveSingles: autoSolveSingles,
+      );
+    }
+
+    test('is off by default', () {
+      expect(state().autoSolveSingles, isFalse);
+    });
+
+    test('inputNumber does not auto-fill a newly forced single while off', () {
+      controller.restore(twoCellFixture());
+      controller.selectCell(0, 7);
+
+      controller.inputNumber(1); // correct; would force (0, 8) -> 2 if on
+
+      expect(state().board.cellAt(0, 8).value, 0);
+    });
+
+    test('inputNumber auto-fills a newly forced single once turned on, in one undo step', () async {
+      controller.restore(twoCellFixture(autoSolveSingles: true));
+      controller.selectCell(0, 7);
+
+      controller.inputNumber(1); // correct; (0, 8)'s only candidate becomes 2
+      await waitForAutoSolve();
+
+      expect(state().board.cellAt(0, 7).value, 1);
+      expect(state().board.cellAt(0, 8).value, 2);
+      expect(state().mistakes, 0);
+
+      // The cascade never pushes its own undo entry, so undoing the move
+      // that triggered it reverts both cells at once.
+      controller.undo();
+      expect(state().board.cellAt(0, 7).value, 0);
+      expect(state().board.cellAt(0, 8).value, 0);
+    });
+
+    test('toggleAutoSolveSingles fills an existing single, without adding its own undo step', () async {
+      // (0, 7) is already filled as a *given* here (unlike the cascade
+      // tests above, where it's filled by a move), so (0, 8) - candidates
+      // {1, 2} before, now just {2} - is already forced before the toggle
+      // is ever touched.
+      final values = List.generate(9, (_) => List.filled(9, 0));
+      values[0] = [5, 3, 4, 6, 7, 8, 9, 1, 0];
+      final solutionValues = List.generate(9, (_) => List.filled(9, 0));
+      solutionValues[0] = [5, 3, 4, 6, 7, 8, 9, 1, 2];
+      controller.restore(GameState(
+        board: Board.fromValues(values),
+        solution: Board.fromValues(solutionValues),
+        difficulty: Difficulty.easy,
+      ));
+
+      controller.toggleAutoSolveSingles();
+      expect(state().autoSolveSingles, isTrue);
+      await waitForAutoSolve();
+
+      expect(state().board.cellAt(0, 8).value, 2);
+      // The toggle itself doesn't touch the board, so it never pushed an
+      // undo entry, and neither did the cascade it kicked off - there was
+      // nothing to undo *to* before this test's very first move.
+      expect(state().canUndo, isFalse);
+    });
+
+    test('toggleAutoSolveSingles does not fill anything while a wrong entry is on the board', () async {
+      controller.restore(twoCellFixture());
+      controller.selectCell(0, 7);
+      controller.inputNumber(2); // wrong: solution says 1
+      expect(state().mistakes, 1);
+
+      controller.toggleAutoSolveSingles();
+      await waitForAutoSolve();
+
+      // The toggle still flips - it just can't safely deduce anything
+      // while an unresolved wrong entry could corrupt the deduction (same
+      // guard as hints - see peekHint's wrong-entry test above).
+      expect(state().autoSolveSingles, isTrue);
+      expect(state().board.cellAt(0, 8).value, 0);
+    });
+
+    test('toggling off again stops future moves from auto-filling', () {
+      controller.restore(twoCellFixture(autoSolveSingles: true));
+      controller.toggleAutoSolveSingles();
+      expect(state().autoSolveSingles, isFalse);
+
+      controller.selectCell(0, 7);
+      controller.inputNumber(1);
+
+      expect(state().board.cellAt(0, 8).value, 0);
+    });
+
+    test('can complete and win the game on its own', () async {
+      const solutionValues = [
+        [5, 3, 4, 6, 7, 8, 9, 1, 2],
+        [6, 7, 2, 1, 9, 5, 3, 4, 8],
+        [1, 9, 8, 3, 4, 2, 5, 6, 7],
+        [8, 5, 9, 7, 6, 1, 4, 2, 3],
+        [4, 2, 6, 8, 5, 3, 7, 9, 1],
+        [7, 1, 3, 9, 2, 4, 8, 5, 6],
+        [9, 6, 1, 5, 3, 7, 2, 8, 4],
+        [2, 8, 7, 4, 1, 9, 6, 3, 5],
+        [3, 4, 5, 2, 8, 6, 1, 7, 9],
+      ];
+      final almostDone = [for (final row in solutionValues) [...row]];
+      almostDone[0][8] = 0; // the only empty cell; forced to 2 by its row/column/box
+
+      controller.restore(GameState(
+        board: Board.fromValues(almostDone),
+        solution: Board.fromValues(solutionValues),
+        difficulty: Difficulty.easy,
+      ));
+
+      controller.toggleAutoSolveSingles();
+      await waitForAutoSolve();
+
+      expect(state().board.cellAt(0, 8).value, 2);
+      expect(state().isWon, isTrue);
+
+      // Let the leaderboard's async write finish before the container gets
+      // disposed in tearDown (see the leaderboard test further below).
+      await pumpEventQueue();
+    });
+  });
+
   test('the saved-game provider reflects progress after a move, for Home to offer resume', () async {
     final pos = _firstEmptyCell(state());
     controller.selectCell(pos.$1, pos.$2);

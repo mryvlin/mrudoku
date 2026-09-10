@@ -133,6 +133,8 @@
   "@notesLabel": {"description": "Toolbar button label (notes-mode toggle)."},
   "autoNotesLabel": "Auto-Notizen",
   "@autoNotesLabel": {"description": "Toolbar button label (auto-fill notes)."},
+  "autoSolveLabel": "Auto-Lösen",
+  "@autoSolveLabel": {"description": "Toolbar button label (toggle: auto-fill cells with only one legal candidate)."},
   "hintLabel": "Hinweis ({count})",
   "@hintLabel": {
     "description": "Toolbar button label showing remaining hints.",

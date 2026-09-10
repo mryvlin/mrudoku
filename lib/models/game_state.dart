@@ -20,6 +20,11 @@ class GameState {
   final bool isPaused;
   final bool isWon;
   final bool notesMode;
+
+  /// When on, any cell left with exactly one legal candidate (a "naked
+  /// single") is filled in automatically after every move - see
+  /// [GameController._applyAutoSolve].
+  final bool autoSolveSingles;
   final int? selectedRow;
   final int? selectedCol;
   final List<Board> undoStack;
@@ -38,6 +43,7 @@ class GameState {
     this.isPaused = false,
     this.isWon = false,
     this.notesMode = false,
+    this.autoSolveSingles = false,
     this.selectedRow,
     this.selectedCol,
     this.undoStack = const [],
@@ -63,6 +69,7 @@ class GameState {
     bool? isPaused,
     bool? isWon,
     bool? notesMode,
+    bool? autoSolveSingles,
     int? selectedRow,
     int? selectedCol,
     bool clearSelection = false,
@@ -82,6 +89,7 @@ class GameState {
       isPaused: isPaused ?? this.isPaused,
       isWon: isWon ?? this.isWon,
       notesMode: notesMode ?? this.notesMode,
+      autoSolveSingles: autoSolveSingles ?? this.autoSolveSingles,
       selectedRow: clearSelection ? null : (selectedRow ?? this.selectedRow),
       selectedCol: clearSelection ? null : (selectedCol ?? this.selectedCol),
       undoStack: undoStack ?? this.undoStack,
@@ -102,6 +110,7 @@ class GameState {
         'hintsUsed': hintsUsed,
         'maxHints': maxHints,
         'notesMode': notesMode,
+        'autoSolveSingles': autoSolveSingles,
         'isWon': isWon,
       };
 
@@ -116,6 +125,7 @@ class GameState {
         hintsUsed: json['hintsUsed'] as int? ?? 0,
         maxHints: json['maxHints'] as int? ?? 5,
         notesMode: json['notesMode'] as bool? ?? false,
+        autoSolveSingles: json['autoSolveSingles'] as bool? ?? false,
         isWon: json['isWon'] as bool? ?? false,
       );
 }

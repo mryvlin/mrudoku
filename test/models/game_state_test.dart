@@ -51,4 +51,24 @@ void main() {
     final json = _state().toJson()..remove('isWon');
     expect(GameState.fromJson(json).isWon, isFalse);
   });
+
+  test('defaults to autoSolveSingles: false', () {
+    expect(_state().autoSolveSingles, isFalse);
+  });
+
+  test('toJson/fromJson round-trips autoSolveSingles', () {
+    final state = GameState(
+      board: Board.empty(),
+      solution: Board.empty(),
+      difficulty: Difficulty.easy,
+      autoSolveSingles: true,
+    );
+    final restored = GameState.fromJson(state.toJson());
+    expect(restored.autoSolveSingles, isTrue);
+  });
+
+  test('fromJson falls back to autoSolveSingles: false for an older save missing the field', () {
+    final json = _state().toJson()..remove('autoSolveSingles');
+    expect(GameState.fromJson(json).autoSolveSingles, isFalse);
+  });
 }

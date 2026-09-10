@@ -155,6 +155,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get autoNotesLabel => 'Auto-Notes';
 
   @override
+  String get autoSolveLabel => 'Auto-Solve';
+
+  @override
   String hintLabel(int count) {
     return 'Hint ($count)';
   }

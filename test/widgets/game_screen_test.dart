@@ -29,7 +29,10 @@ int _filledCellCount(Board board) {
   throw StateError('no empty cell found');
 }
 
-Future<ProviderContainer> _startedContainer(WidgetTester tester) async {
+Future<ProviderContainer> _startedContainer(
+  WidgetTester tester, {
+  Difficulty difficulty = Difficulty.easy,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final container = ProviderContainer();
   addTearDown(container.dispose);
@@ -39,7 +42,7 @@ Future<ProviderContainer> _startedContainer(WidgetTester tester) async {
   // runAsync (see WidgetTester.runAsync docs on real async work in tests).
   await tester.runAsync(
     () => container.read(gameControllerProvider.notifier).startNewGame(
-      Difficulty.easy,
+      difficulty,
       maxMistakes: 3,
       errorLimitEnabled: true,
       maxHints: 5,
@@ -158,6 +161,30 @@ void main() {
     expect(container.read(gameControllerProvider)!.hintsRemaining, hintsAfterPeek - 1);
 
     // Flush the debounced autosave timer confirmHint scheduled, so the test
+    // doesn't end with a pending Timer.
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('the auto-solve toolbar button toggles GameState.autoSolveSingles', (tester) async {
+    // An Easy puzzle is solvable start-to-finish with naked singles alone
+    // (see Difficulty.maxAllowedTechniqueRank), so turning auto-solve on
+    // would immediately win it, and a won game locks out the second toggle
+    // this test needs. Expert always needs more than naked singles, so it
+    // can't complete (and lock the toggle) on its own like that.
+    final container = await _startedContainer(tester, difficulty: Difficulty.expert);
+    expect(container.read(gameControllerProvider)!.autoSolveSingles, isFalse);
+
+    await tester.tap(find.byKey(const ValueKey('toolbar-autosolve')));
+    await tester.pump();
+
+    expect(container.read(gameControllerProvider)!.autoSolveSingles, isTrue);
+
+    await tester.tap(find.byKey(const ValueKey('toolbar-autosolve')));
+    await tester.pump();
+
+    expect(container.read(gameControllerProvider)!.autoSolveSingles, isFalse);
+
+    // Flush whatever debounced autosave the toggles scheduled, so the test
     // doesn't end with a pending Timer.
     await tester.pump(const Duration(seconds: 1));
   });

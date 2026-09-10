@@ -374,6 +374,12 @@ abstract class AppLocalizations {
   /// **'Auto-Notizen'**
   String get autoNotesLabel;
 
+  /// Toolbar button label (toggle: auto-fill cells with only one legal candidate).
+  ///
+  /// In de, this message translates to:
+  /// **'Auto-Lösen'**
+  String get autoSolveLabel;
+
   /// Toolbar button label showing remaining hints.
   ///
   /// In de, this message translates to:

@@ -132,6 +132,20 @@ class GameController extends Notifier<GameState?> {
     state = s.copyWith(notesMode: !s.notesMode);
   }
 
+  /// Toggles auto-fill of naked singles (see [GameState.autoSolveSingles]).
+  /// Turning it on kicks off [_runAutoSolveCascade] to fill in any single
+  /// already on the board, same as it would after any future move; turning
+  /// it off just stops future moves from triggering it (a cascade already
+  /// running finishes its current step, then stops on its own).
+  void toggleAutoSolveSingles() {
+    final s = state;
+    if (s == null || _locked(s)) return;
+    final enabling = !s.autoSolveSingles;
+    state = s.copyWith(autoSolveSingles: enabling);
+    _schedulePersist();
+    if (enabling) _runAutoSolveCascade();
+  }
+
   void togglePause() {
     final s = state;
     if (s == null || s.isWon || s.isGameOver) return;
@@ -213,6 +227,7 @@ class GameController extends Notifier<GameState?> {
       saveNow();
     } else {
       _schedulePersist();
+      _runAutoSolveCascade();
     }
   }
 
@@ -350,6 +365,7 @@ class GameController extends Notifier<GameState?> {
       saveNow();
     } else {
       _schedulePersist();
+      _runAutoSolveCascade();
     }
   }
 
@@ -401,6 +417,80 @@ class GameController extends Notifier<GameState?> {
     for (var r = 0; r < kBoardSize; r++) {
       for (var c = 0; c < kBoardSize; c++) {
         if (board.cellAt(r, c).isEmpty) return (r, c);
+      }
+    }
+    return null;
+  }
+
+  /// Pause between each cell [_runAutoSolveCascade] fills in, so they
+  /// appear one at a time instead of all at once.
+  static const _autoSolveStepDelay = Duration(milliseconds: 50);
+
+  /// True while a cascade (started by [inputNumber], [confirmHint] or
+  /// [toggleAutoSolveSingles]) is already stepping through
+  /// [_autoSolveStepDelay]-spaced placements, so a second trigger firing
+  /// mid-cascade doesn't start an overlapping one - the already-running
+  /// loop will pick up anything the second trigger changed on its own next
+  /// iteration anyway, since it always re-reads live state.
+  bool _autoSolveRunning = false;
+
+  /// If [GameState.autoSolveSingles] is on, fills in cells left with
+  /// exactly one legal candidate (a "naked single") one at a time,
+  /// [_autoSolveStepDelay] apart, until none remain. Stops early - without
+  /// pushing an undo entry of its own, so whatever the triggering action
+  /// already recorded is the only one - if a wrong entry blocks further
+  /// deduction (same guard as hints, see [_hasWrongEntry]), the mistake
+  /// limit is reached, the game is paused, the toggle gets turned back
+  /// off, or the controller itself is disposed mid-run.
+  Future<void> _runAutoSolveCascade() async {
+    if (_autoSolveRunning) return;
+    final initial = state;
+    if (initial == null || !initial.autoSolveSingles) return;
+
+    _autoSolveRunning = true;
+    try {
+      while (true) {
+        await Future<void>.delayed(_autoSolveStepDelay);
+        if (!ref.mounted) return;
+
+        final s = state;
+        if (s == null || !s.autoSolveSingles || _locked(s) || _hasWrongEntry(s)) return;
+        final target = _firstNakedSingle(s.board);
+        if (target == null) return;
+
+        final (row, col, value) = target;
+        final cell = s.board.cellAt(row, col);
+        final isCorrect = s.solution.cellAt(row, col).value == value;
+        final placedBoard = s.board.setCell(row, col, cell.copyWith(value: value, clearNotes: isCorrect));
+        final newBoard = isCorrect ? _stripNoteFromPeers(placedBoard, row, col, value) : placedBoard;
+        var newState = s.copyWith(board: newBoard, mistakes: s.mistakes + (isCorrect ? 0 : 1));
+
+        if (Validator.isSolved(newBoard)) {
+          newState = newState.copyWith(isWon: true);
+          _sound.win();
+          _recordWin(newState.difficulty, newState.elapsedSeconds);
+        }
+
+        state = newState;
+        if (newState.isWon) {
+          await saveNow();
+        } else {
+          _schedulePersist();
+        }
+      }
+    } finally {
+      _autoSolveRunning = false;
+    }
+  }
+
+  /// The first empty cell with exactly one legal candidate, if any - see
+  /// `Candidates.forCell` for why non-empty cells must be filtered out here.
+  (int, int, int)? _firstNakedSingle(Board board) {
+    for (var r = 0; r < kBoardSize; r++) {
+      for (var c = 0; c < kBoardSize; c++) {
+        if (!board.cellAt(r, c).isEmpty) continue;
+        final candidates = Candidates.forCell(board, r, c);
+        if (candidates.length == 1) return (r, c, candidates.first);
       }
     }
     return null;

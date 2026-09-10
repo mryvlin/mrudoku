@@ -3,16 +3,19 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Row of secondary gameplay actions: undo/redo, notes-mode toggle,
-/// auto-fill notes, and the hint button.
+/// auto-fill notes, the naked-singles auto-solve toggle, and the hint
+/// button.
 class GameToolbarWidget extends StatelessWidget {
   final bool canUndo;
   final bool canRedo;
   final bool notesMode;
+  final bool autoSolveEnabled;
   final int hintsRemaining;
   final VoidCallback onUndo;
   final VoidCallback onRedo;
   final VoidCallback onToggleNotes;
   final VoidCallback onAutoFillNotes;
+  final VoidCallback onToggleAutoSolve;
   final VoidCallback onHint;
 
   const GameToolbarWidget({
@@ -20,11 +23,13 @@ class GameToolbarWidget extends StatelessWidget {
     required this.canUndo,
     required this.canRedo,
     required this.notesMode,
+    required this.autoSolveEnabled,
     required this.hintsRemaining,
     required this.onUndo,
     required this.onRedo,
     required this.onToggleNotes,
     required this.onAutoFillNotes,
+    required this.onToggleAutoSolve,
     required this.onHint,
   });
 
@@ -64,6 +69,15 @@ class GameToolbarWidget extends StatelessWidget {
             icon: Icons.auto_fix_high_outlined,
             label: l10n.autoNotesLabel,
             onTap: onAutoFillNotes,
+          ),
+        ),
+        Expanded(
+          child: _ToolbarButton(
+            key: const ValueKey('toolbar-autosolve'),
+            icon: autoSolveEnabled ? Icons.auto_awesome : Icons.auto_awesome_outlined,
+            label: l10n.autoSolveLabel,
+            isActive: autoSolveEnabled,
+            onTap: onToggleAutoSolve,
           ),
         ),
         Expanded(
