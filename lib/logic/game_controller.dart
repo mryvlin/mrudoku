@@ -123,6 +123,12 @@ class GameController extends Notifier<GameState?> {
   void selectCell(int row, int col) {
     final s = state;
     if (s == null || _locked(s)) return;
+    // Tapping the already-selected cell again deselects it, clearing the
+    // highlighting, instead of just re-selecting the same cell.
+    if (s.selectedRow == row && s.selectedCol == col) {
+      state = s.copyWith(clearSelection: true);
+      return;
+    }
     state = s.copyWith(selectedRow: row, selectedCol: col);
   }
 

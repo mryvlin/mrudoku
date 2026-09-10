@@ -80,6 +80,44 @@ void main() {
     expect(state().maxHints, 5);
   });
 
+  test('selecting a cell highlights it', () {
+    final pos = _firstEmptyCell(state());
+
+    controller.selectCell(pos.$1, pos.$2);
+
+    expect(state().selectedRow, pos.$1);
+    expect(state().selectedCol, pos.$2);
+    expect(state().hasSelection, isTrue);
+  });
+
+  test('selecting the already-selected cell again deselects it', () {
+    final pos = _firstEmptyCell(state());
+    controller.selectCell(pos.$1, pos.$2);
+
+    controller.selectCell(pos.$1, pos.$2);
+
+    expect(state().selectedRow, isNull);
+    expect(state().selectedCol, isNull);
+    expect(state().hasSelection, isFalse);
+  });
+
+  test('selecting a different cell after deselecting selects that one normally', () {
+    final first = _firstEmptyCell(state());
+    controller.selectCell(first.$1, first.$2);
+    controller.selectCell(first.$1, first.$2); // deselect
+
+    final board = state().board;
+    final second = [
+      for (var r = 0; r < 9; r++)
+        for (var c = 0; c < 9; c++)
+          if (board.cellAt(r, c).isEmpty && (r, c) != first) (r, c),
+    ].first;
+    controller.selectCell(second.$1, second.$2);
+
+    expect(state().selectedRow, second.$1);
+    expect(state().selectedCol, second.$2);
+  });
+
   test('entering the correct value updates the board and keeps mistakes at 0', () {
     final pos = _firstEmptyCell(state());
     controller.selectCell(pos.$1, pos.$2);
@@ -321,8 +359,9 @@ void main() {
     final step = controller.peekHint()!;
     final before = state().hintsRemaining;
     // Simulate the player entering something else there while the hint's
-    // banner was still up, before tapping "Got it".
-    controller.selectCell(step.row, step.col);
+    // banner was still up, before tapping "Got it" - peekHint already
+    // selected the cell, so it's ready for input without selecting it again
+    // (which would now deselect it instead - see selectCell's toggle).
     final otherValue = (step.value % 9) + 1;
     controller.inputNumber(otherValue);
 
