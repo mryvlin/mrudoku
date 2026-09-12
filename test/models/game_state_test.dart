@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mrsudoku/models/board.dart';
+import 'package:mrsudoku/models/board_layout.dart';
 import 'package:mrsudoku/models/difficulty.dart';
 import 'package:mrsudoku/models/game_state.dart';
 
@@ -70,5 +71,26 @@ void main() {
   test('fromJson falls back to autoSolveSingles: false for an older save missing the field', () {
     final json = _state().toJson()..remove('autoSolveSingles');
     expect(GameState.fromJson(json).autoSolveSingles, isFalse);
+  });
+
+  test('defaults to BoardLayout.classic', () {
+    expect(_state().layout, BoardLayout.classic);
+  });
+
+  test('toJson/fromJson round-trips a Samurai layout, reconstructing the board with its shape', () {
+    final state = GameState(
+      board: Board.empty(BoardLayout.samurai.shape),
+      solution: Board.empty(BoardLayout.samurai.shape),
+      difficulty: Difficulty.easy,
+      layout: BoardLayout.samurai,
+    );
+    final restored = GameState.fromJson(state.toJson());
+    expect(restored.layout, BoardLayout.samurai);
+    expect(restored.board.shape.activeCells, BoardLayout.samurai.shape.activeCells);
+  });
+
+  test('fromJson falls back to BoardLayout.classic for an older save missing the field', () {
+    final json = _state().toJson()..remove('layout');
+    expect(GameState.fromJson(json).layout, BoardLayout.classic);
   });
 }

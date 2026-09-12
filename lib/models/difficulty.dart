@@ -1,10 +1,12 @@
+import 'board_layout.dart';
+
 /// Available difficulty levels for a new game.
 enum Difficulty { easy, medium, hard, expert }
 
 extension DifficultyX on Difficulty {
-  /// Number of given (pre-filled) cells the generator aims to keep. Lower
-  /// clue counts require harder solving techniques and more backtracking
-  /// during generation.
+  /// Number of given (pre-filled) cells the generator aims to keep on a
+  /// classic 9x9 board. Lower clue counts require harder solving techniques
+  /// and more backtracking during generation.
   int get clueCount {
     switch (this) {
       case Difficulty.easy:
@@ -15,6 +17,30 @@ extension DifficultyX on Difficulty {
         return 28;
       case Difficulty.expert:
         return 24;
+    }
+  }
+
+  /// Number of given cells the generator aims to keep, for [layout]. A
+  /// Samurai board (369 active cells across its 5 overlapping grids) needs
+  /// proportionally far more givens than [clueCount]'s classic numbers
+  /// scaled up would suggest, to stay solvable/generatable in reasonable
+  /// time - the interlocking shared boxes make low clue counts much more
+  /// expensive to dig holes into than an equivalent-ratio classic board.
+  int clueCountFor(BoardLayout layout) {
+    switch (layout) {
+      case BoardLayout.classic:
+        return clueCount;
+      case BoardLayout.samurai:
+        switch (this) {
+          case Difficulty.easy:
+            return 220;
+          case Difficulty.medium:
+            return 190;
+          case Difficulty.hard:
+            return 160;
+          case Difficulty.expert:
+            return 140;
+        }
     }
   }
 

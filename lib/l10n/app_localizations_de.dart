@@ -144,6 +144,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get difficultyExpert => 'Experte';
 
   @override
+  String get boardLayoutClassic => 'Klassisch';
+
+  @override
+  String get boardLayoutSamurai => 'Samurai';
+
+  @override
   String get undoLabel => 'Rückgängig';
 
   @override

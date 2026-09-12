@@ -12,15 +12,8 @@ class Validator {
     if (value == 0) return const {};
     final conflicts = <(int, int)>{};
 
-    for (var c = 0; c < kBoardSize; c++) {
-      if (c != col && board.cellAt(row, c).value == value) conflicts.add((row, c));
-    }
-    for (var r = 0; r < kBoardSize; r++) {
-      if (r != row && board.cellAt(r, col).value == value) conflicts.add((r, col));
-    }
-    final (boxRow, boxCol) = boxOrigin(row, col);
-    for (var r = boxRow; r < boxRow + kBoxSize; r++) {
-      for (var c = boxCol; c < boxCol + kBoxSize; c++) {
+    for (final unit in board.unitsContaining(row, col)) {
+      for (final (r, c) in unit.cells) {
         if ((r != row || c != col) && board.cellAt(r, c).value == value) conflicts.add((r, c));
       }
     }
@@ -38,12 +31,10 @@ class Validator {
   /// error overlay.
   static Set<(int, int)> allConflicts(Board board) {
     final conflicts = <(int, int)>{};
-    for (var r = 0; r < kBoardSize; r++) {
-      for (var c = 0; c < kBoardSize; c++) {
-        final value = board.cellAt(r, c).value;
-        if (value == 0) continue;
-        if (conflictsFor(board, r, c, value).isNotEmpty) conflicts.add((r, c));
-      }
+    for (final (r, c) in board.shape.activeCells) {
+      final value = board.cellAt(r, c).value;
+      if (value == 0) continue;
+      if (conflictsFor(board, r, c, value).isNotEmpty) conflicts.add((r, c));
     }
     return conflicts;
   }
