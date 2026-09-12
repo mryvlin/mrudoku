@@ -19,8 +19,10 @@
     }
   },
 
-  "newGame": "Neues Spiel",
-  "@newGame": {"description": "Heading above the difficulty buttons on the Home screen."},
+  "gameModeLabel": "Spielmodus",
+  "@gameModeLabel": {"description": "Heading above the board layout selector on the Home screen."},
+  "difficultyLevelLabel": "Schwierigkeit",
+  "@difficultyLevelLabel": {"description": "Heading above the difficulty selector on the Home screen."},
 
   "pause": "Pausieren",
   "@pause": {"description": "Tooltip for the pause button while the game is running."},

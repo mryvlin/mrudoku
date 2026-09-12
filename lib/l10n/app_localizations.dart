@@ -122,11 +122,17 @@ abstract class AppLocalizations {
   /// **'Fortsetzen - {difficulty} ({time})'**
   String resumeButtonLabel(String difficulty, String time);
 
-  /// Heading above the difficulty buttons on the Home screen.
+  /// Heading above the board layout selector on the Home screen.
   ///
   /// In de, this message translates to:
-  /// **'Neues Spiel'**
-  String get newGame;
+  /// **'Spielmodus'**
+  String get gameModeLabel;
+
+  /// Heading above the difficulty selector on the Home screen.
+  ///
+  /// In de, this message translates to:
+  /// **'Schwierigkeit'**
+  String get difficultyLevelLabel;
 
   /// Tooltip for the pause button while the game is running.
   ///

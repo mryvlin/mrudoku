@@ -10,12 +10,16 @@ import '../../models/settings.dart';
 import '../board_layout_labels.dart';
 import '../difficulty_labels.dart';
 import '../format_duration.dart';
+import '../home_palette.dart';
 import '../widgets/leaderboard_widget.dart';
 import 'game_screen.dart';
 import 'settings_screen.dart';
 
 /// Landing screen: offers to continue a saved game (if any) and lets the
-/// player start a new one at a chosen difficulty.
+/// player start a new one at a chosen board layout and difficulty. Uses a
+/// fixed dark design ([HomePalette]) rather than the app's theme, since this
+/// is meant to be the screen's one look regardless of the user's
+/// light/dark/system theme setting.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -36,6 +40,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// launches.
   BoardLayout _selectedLayout = BoardLayout.classic;
 
+  /// Purely a visual "last chosen" highlight - tapping a difficulty starts a
+  /// game immediately (as before), this just tracks which pill to show
+  /// selected.
+  Difficulty _selectedDifficulty = Difficulty.medium;
+
   @override
   Widget build(BuildContext context) {
     final savedGame = ref.watch(savedGameProvider);
@@ -44,12 +53,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
+      backgroundColor: HomePalette.background,
       appBar: AppBar(
-        title: const Text('mrsudoku'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           IconButton(
             tooltip: l10n.settings,
-            icon: const Icon(Icons.settings_outlined),
+            icon: const Icon(Icons.settings_outlined, color: HomePalette.mutedText),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SettingsScreen()),
             ),
@@ -61,59 +73,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.grid_on_outlined, size: 72, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(height: 16),
-                  Text('Sudoku', style: Theme.of(context).textTheme.headlineMedium),
-                  const SizedBox(height: 32),
+                  const _Header(),
                   savedGame.when(
-                    data: (saved) => saved == null
-                        ? const SizedBox.shrink()
-                        : Padding(
-                            padding: const EdgeInsets.only(bottom: 28),
-                            child: FilledButton.icon(
-                              onPressed: _navigating ? null : () => _continueGame(saved),
-                              icon: const Icon(Icons.play_arrow),
-                              label: Text(
-                                l10n.resumeButtonLabel(
-                                  saved.difficulty.label(l10n),
-                                  formatDuration(saved.elapsedSeconds),
-                                ),
-                              ),
-                            ),
-                          ),
+                    data: (saved) => saved == null ? const SizedBox.shrink() : _ResumeButton(
+                          saved: saved,
+                          enabled: !_navigating,
+                          onTap: () => _continueGame(saved),
+                        ),
                     loading: () => const SizedBox.shrink(),
                     error: (_, _) => const SizedBox.shrink(),
                   ),
-                  Text(l10n.newGame, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 28),
+                  _SectionLabel(l10n.gameModeLabel),
                   const SizedBox(height: 12),
-                  SegmentedButton<BoardLayout>(
-                    segments: [
-                      for (final layout in BoardLayout.values)
-                        ButtonSegment(value: layout, label: Text(layout.label(l10n))),
-                    ],
-                    selected: {_selectedLayout},
-                    onSelectionChanged: _navigating
-                        ? null
-                        : (selection) => setState(() => _selectedLayout = selection.first),
+                  _LayoutSelector(
+                    selected: _selectedLayout,
+                    enabled: !_navigating,
+                    onChanged: (layout) => setState(() => _selectedLayout = layout),
                   ),
+                  const SizedBox(height: 28),
+                  _SectionLabel(l10n.difficultyLevelLabel),
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      for (final difficulty in Difficulty.values)
-                        OutlinedButton(
-                          onPressed: _navigating ? null : () => _startNewGame(difficulty, settings),
-                          child: Text(difficulty.label(l10n)),
-                        ),
-                    ],
+                  _DifficultySelector(
+                    selected: _selectedDifficulty,
+                    enabled: !_navigating,
+                    onSelected: (difficulty) {
+                      setState(() => _selectedDifficulty = difficulty);
+                      _startNewGame(difficulty, settings);
+                    },
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
                   LeaderboardWidget(entries: leaderboard),
                 ],
               ),
@@ -156,5 +148,299 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         );
     await pushed;
     if (mounted) setState(() => _navigating = false);
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const SizedBox(height: 8),
+        Container(
+          width: 84,
+          height: 84,
+          decoration: BoxDecoration(
+            gradient: HomePalette.accentGradient,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: HomePalette.gradientEnd.withValues(alpha: 0.35),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: const Icon(Icons.grid_on, color: Colors.white, size: 38),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Sudoku',
+          style: TextStyle(fontSize: 38, fontWeight: FontWeight.w800, color: HomePalette.primaryText),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'LOGIC · FOCUS · RELAX',
+          style: TextStyle(
+            fontSize: 12,
+            letterSpacing: 3,
+            fontWeight: FontWeight.w600,
+            color: HomePalette.mutedText,
+          ),
+        ),
+        const SizedBox(height: 28),
+      ],
+    );
+  }
+}
+
+class _ResumeButton extends StatelessWidget {
+  final GameState saved;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _ResumeButton({required this.saved, required this.enabled, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: HomePalette.accentGradient,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: enabled ? onTap : null,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.play_arrow, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.resumeButtonLabel(saved.difficulty.label(l10n), formatDuration(saved.elapsedSeconds)),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(color: HomePalette.mutedText, fontWeight: FontWeight.w600, fontSize: 14),
+    );
+  }
+}
+
+/// The "Spielmodus" pill-segmented control: one bordered outer pill holding
+/// all [BoardLayout] options, the selected one filled with the accent
+/// gradient and shown with a check mark instead of its own icon.
+class _LayoutSelector extends StatelessWidget {
+  final BoardLayout selected;
+  final bool enabled;
+  final ValueChanged<BoardLayout> onChanged;
+
+  const _LayoutSelector({required this.selected, required this.enabled, required this.onChanged});
+
+  static IconData _iconFor(BoardLayout layout) => switch (layout) {
+        BoardLayout.classic => Icons.grid_on_outlined,
+        BoardLayout.samurai => Icons.star_outline,
+        BoardLayout.twin => Icons.grid_view_outlined,
+        BoardLayout.gattai8 => Icons.apps_outlined,
+        BoardLayout.sohei => Icons.wb_sunny_outlined,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        border: Border.all(color: HomePalette.border),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        children: [
+          for (final layout in BoardLayout.values)
+            Expanded(
+              child: _PillSegment(
+                key: ValueKey('layout-${layout.name}'),
+                isSelected: layout == selected,
+                icon: _iconFor(layout),
+                label: layout.label(l10n),
+                onTap: enabled ? () => onChanged(layout) : null,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PillSegment extends StatelessWidget {
+  final bool isSelected;
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  const _PillSegment({super.key, required this.isSelected, required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isSelected ? Colors.white : HomePalette.mutedText;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          gradient: isSelected ? HomePalette.accentGradient : null,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(isSelected ? Icons.check : icon, size: 18, color: color),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The "Schwierigkeit" row: one independently-bordered pill per
+/// [Difficulty], the selected one filled with the accent gradient.
+class _DifficultySelector extends StatelessWidget {
+  final Difficulty selected;
+  final bool enabled;
+  final ValueChanged<Difficulty> onSelected;
+
+  const _DifficultySelector({required this.selected, required this.enabled, required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      alignment: WrapAlignment.center,
+      children: [
+        for (final difficulty in Difficulty.values)
+          _DifficultyPill(
+            key: ValueKey('difficulty-${difficulty.name}'),
+            difficulty: difficulty,
+            isSelected: difficulty == selected,
+            label: difficulty.label(l10n),
+            onTap: enabled ? () => onSelected(difficulty) : null,
+          ),
+      ],
+    );
+  }
+}
+
+class _DifficultyPill extends StatelessWidget {
+  final Difficulty difficulty;
+  final bool isSelected;
+  final String label;
+  final VoidCallback? onTap;
+
+  const _DifficultyPill({
+    super.key,
+    required this.difficulty,
+    required this.isSelected,
+    required this.label,
+    required this.onTap,
+  });
+
+  Widget _icon(Color color) {
+    switch (difficulty) {
+      case Difficulty.easy:
+        return Icon(Icons.circle_outlined, size: 14, color: color);
+      case Difficulty.medium:
+        return _Dots(count: 2, color: color);
+      case Difficulty.hard:
+        return _Dots(count: 3, color: color);
+      case Difficulty.expert:
+        return Icon(Icons.grid_view_rounded, size: 14, color: color);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isSelected ? Colors.white : HomePalette.mutedText;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: isSelected ? HomePalette.accentGradient : null,
+          border: isSelected ? null : Border.all(color: HomePalette.border),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _icon(color),
+            const SizedBox(width: 8),
+            Text(label, style: TextStyle(color: color, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Dots extends StatelessWidget {
+  final int count;
+  final Color color;
+
+  const _Dots({required this.count, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < count; i++)
+          Padding(
+            padding: EdgeInsets.only(left: i == 0 ? 0 : 3),
+            child: Container(width: 5, height: 5, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          ),
+      ],
+    );
   }
 }

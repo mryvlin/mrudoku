@@ -7,10 +7,12 @@ import '../../models/leaderboard_entry.dart';
 import '../board_layout_labels.dart';
 import '../difficulty_labels.dart';
 import '../format_duration.dart';
+import '../home_palette.dart';
 
-/// Best-times board shown on the Home screen: for every difficulty that has
-/// at least one completed game, lists its fastest times (already sorted and
-/// capped by [LeaderboardService]).
+/// Best-times board shown on the Home screen: for every difficulty (and
+/// layout) that has at least one completed game, lists its fastest times
+/// (already sorted and capped by [LeaderboardService]). Styled with the
+/// same fixed dark [HomePalette] as the rest of Home, not the app theme.
 class LeaderboardWidget extends StatelessWidget {
   final List<LeaderboardEntry> entries;
 
@@ -23,38 +25,43 @@ class LeaderboardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     if (entries.isEmpty) return const SizedBox.shrink();
 
-    final theme = Theme.of(context);
     final byGroup = <(Difficulty, BoardLayout), List<LeaderboardEntry>>{};
     for (final entry in entries) {
       byGroup.putIfAbsent((entry.difficulty, entry.layout), () => []).add(entry);
     }
 
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.emoji_events_outlined, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(AppLocalizations.of(context)!.leaderboardTitle, style: theme.textTheme.titleMedium),
-              ],
-            ),
-            for (final layout in BoardLayout.values)
-              for (final difficulty in Difficulty.values)
-                if (byGroup[(difficulty, layout)] case final groupEntries?)
-                  _DifficultySection(
-                    difficulty: difficulty,
-                    layout: layout,
-                    entries: (groupEntries..sort((a, b) => a.elapsedSeconds.compareTo(b.elapsedSeconds)))
-                        .take(_rowsPerDifficulty)
-                        .toList(),
-                  ),
-          ],
-        ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: HomePalette.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: HomePalette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.emoji_events_outlined, color: HomePalette.primaryText),
+              const SizedBox(width: 8),
+              Text(
+                AppLocalizations.of(context)!.leaderboardTitle,
+                style: const TextStyle(color: HomePalette.primaryText, fontWeight: FontWeight.w700, fontSize: 18),
+              ),
+            ],
+          ),
+          for (final layout in BoardLayout.values)
+            for (final difficulty in Difficulty.values)
+              if (byGroup[(difficulty, layout)] case final groupEntries?)
+                _DifficultySection(
+                  difficulty: difficulty,
+                  layout: layout,
+                  entries: (groupEntries..sort((a, b) => a.elapsedSeconds.compareTo(b.elapsedSeconds)))
+                      .take(_rowsPerDifficulty)
+                      .toList(),
+                ),
+        ],
       ),
     );
   }
@@ -69,7 +76,6 @@ class _DifficultySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     // Classic keeps its plain difficulty label unchanged; only a
     // non-classic layout gets an extra suffix, so today's leaderboard
@@ -77,25 +83,47 @@ class _DifficultySection extends StatelessWidget {
     final title = layout == BoardLayout.classic
         ? difficulty.label(l10n)
         : '${difficulty.label(l10n)} (${layout.label(l10n)})';
+    final tagColor = HomePalette.tagColor(difficulty, layout);
     return Padding(
-      padding: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.only(top: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: tagColor.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              title,
+              style: TextStyle(color: tagColor, fontWeight: FontWeight.w700, fontSize: 12),
+            ),
           ),
           for (var i = 0; i < entries.length; i++)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: 8, left: 2),
               child: Row(
                 children: [
                   SizedBox(
                     width: 20,
-                    child: Text('${i + 1}.', style: theme.textTheme.bodyMedium),
+                    child: Text(
+                      '${i + 1}.',
+                      style: const TextStyle(color: HomePalette.mutedText, fontSize: 13),
+                    ),
                   ),
-                  Text(formatDuration(entries[i].elapsedSeconds), style: theme.textTheme.bodyMedium),
+                  if (i == 0) ...[
+                    const Icon(Icons.emoji_events, color: HomePalette.gold, size: 14),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(
+                    formatDuration(entries[i].elapsedSeconds),
+                    style: TextStyle(
+                      color: i == 0 ? HomePalette.gold : HomePalette.primaryText,
+                      fontWeight: i == 0 ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
             ),

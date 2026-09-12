@@ -24,7 +24,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get newGame => 'Neues Spiel';
+  String get gameModeLabel => 'Spielmodus';
+
+  @override
+  String get difficultyLevelLabel => 'Schwierigkeit';
 
   @override
   String get pause => 'Pausieren';
