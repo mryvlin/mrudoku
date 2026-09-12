@@ -33,11 +33,6 @@ class SudokuBoardWidget extends StatelessWidget {
   /// `null` for every other technique, where every unit matters.
   final HintUnitType? hintFocusUnit;
 
-  /// Forwarded to every [SudokuCellWidget] - see [SudokuCellWidget.fontScale]
-  /// and [SudokuCellWidget.noteFontScale].
-  final double fontScale;
-  final double noteFontScale;
-
   const SudokuBoardWidget({
     super.key,
     required this.board,
@@ -49,8 +44,6 @@ class SudokuBoardWidget extends StatelessWidget {
     required this.showErrors,
     required this.onCellTap,
     this.hintFocusUnit,
-    this.fontScale = 1,
-    this.noteFontScale = 1,
   });
 
   bool get _hasSelection => selectedRow != null && selectedCol != null;
@@ -144,8 +137,6 @@ class SudokuBoardWidget extends StatelessWidget {
               isThickTopBorder: row > 0 && !shape.activeCells.contains((row - 1, col)),
               highlightedValue: highlightEnabled ? selectedValue : 0,
               highlightColor: resolvedHighlight,
-              fontScale: fontScale,
-              noteFontScale: noteFontScale,
               onTap: () => onCellTap(row, col),
             );
           },
