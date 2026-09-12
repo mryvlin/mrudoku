@@ -2,9 +2,10 @@
 
 A complete, production-ready Sudoku game as a Flutter app - runnable as an
 Android app and as a web app (Flutter Web). Fully offline, no cloud
-dependency, localized in German and English. Supports three board layouts -
-Classic (a single 9x9 grid), Samurai (five overlapping grids), and Twin (two
-overlapping grids) - at four difficulty levels each.
+dependency, localized in German and English. Supports five board layouts -
+Classic (a single 9x9 grid), Samurai (five overlapping grids), Twin (two
+overlapping grids), Gattai-8 (eight grids, also known as Harakiri), and Sohei
+(four grids in a ring) - at four difficulty levels each.
 
 ## Architecture
 
@@ -19,18 +20,20 @@ the confetti particle effect when the puzzle is solved
 (`lib/models/puzzle_shape.dart`) generalizes "a 9x9 grid with 3x3 boxes" into
 a set of active `(row, col)` cells plus a list of `Unit`s (row/column/box
 groups of 9 cells that must each hold 1-9 exactly once) in one shared
-coordinate space. A cell can belong to more than the usual 3 units - a
-Samurai/Twin cell in a shared box belongs to two row units and two column
-units (one pair per grid it's part of) plus the shared box unit. `Solver`,
-`Validator`, `Candidates`, `HintEngine`, and `Generator` all read this
-structure from `PuzzleShape` instead of assuming a fixed 9x9 layout, so
-Samurai and Twin aren't a separate implementation - they're just different
-`PuzzleShape`s selected via the `BoardLayout` enum
+coordinate space. A cell can belong to more than the usual 3 units - a cell
+in a box shared between two grids (every non-classic layout is built from
+overlapping 9x9 grids sharing a corner box, in various arrangements) belongs
+to two row units and two column units (one pair per grid it's part of) plus
+the shared box unit. `Solver`, `Validator`, `Candidates`, `HintEngine`, and
+`Generator` all read this structure from `PuzzleShape` instead of assuming a
+fixed 9x9 layout, so Samurai, Twin, Gattai-8 and Sohei aren't separate
+implementations - they're just different `PuzzleShape`s (built from
+different lists of grid origins) selected via the `BoardLayout` enum
 (`lib/models/board_layout.dart`). `PuzzleShape.linkedUnitPairs` (every pair of
 distinct units sharing 2+ cells, precomputed once) is what lets the
 pointing-pair/box-line-reduction rule and the X-Wing/Swordfish fish
-techniques generalize correctly across a shared box between two grids,
-instead of only working within a single classic 9x9 grid.
+techniques generalize correctly across a shared box between grids, instead of
+only working within a single classic 9x9 grid.
 
 **Riverpod** (`flutter_riverpod`, the modern `Notifier`/`NotifierProvider`
 API) is used for state management: it lets game logic be tested
@@ -56,10 +59,10 @@ lib/
   models/     Pure Dart, no Flutter imports: Cell, Board (shape-parameterized
               so it works with any PuzzleShape), PuzzleShape/Unit/UnitKind
               (the generalized row/column/box constraint system), BoardLayout
-              (classic/samurai/twin), Difficulty (per-layout clue counts via
-              clueCountFor, plus the hint-technique cap per difficulty),
-              Settings, GameState (board, solution, layout, undo/redo,
-              auto-solve-singles toggle, etc.), LeaderboardEntry (now
+              (classic/samurai/twin/gattai8/sohei), Difficulty (per-layout
+              clue counts via clueCountFor, plus the hint-technique cap per
+              difficulty), Settings, GameState (board, solution, layout,
+              undo/redo, auto-solve-singles toggle, etc.), LeaderboardEntry (now
               layout-aware). Immutable, JSON-serializable for persistence.
   logic/      Pure Dart: Solver (backtracking + uniqueness check, shape-
               aware), Generator (produces puzzles with a unique solution for
@@ -92,7 +95,7 @@ lib/
 test/
   logic/      Unit tests: Solver, Validator, Generator (uniqueness and
               reproducibility per difficulty and per board layout, including
-              a shared test helper for the Samurai/Twin layouts), HintEngine
+              a shared test helper for the non-classic layouts), HintEngine
               (every implemented technique through Swordfish, difficulty
               rating), GameController.
   models/     Unit tests: Difficulty, GameState, PuzzleShape (shape geometry:
@@ -112,10 +115,15 @@ test/
 
 ## Features
 
-- Three board layouts: **Classic** (one 9x9 grid), **Samurai** (five
-  overlapping 9x9 grids in a cross, sharing a corner box each with the
-  center grid), and **Twin** (two 9x9 grids sharing one corner box) - picked
-  from the Home screen alongside the difficulty.
+- Five board layouts, all built from overlapping 9x9 grids that each share a
+  corner box with a neighbor: **Classic** (one grid), **Samurai** (five
+  grids in a cross, the four corner grids each sharing a box with the
+  center grid), **Twin** (two grids sharing one box), **Gattai-8** (eight
+  grids in a 3-2-3 "Harakiri" arrangement, two middle grids bridging the
+  gaps in a top row of three and a bottom row of three), and **Sohei** (four
+  grids in a ring, each sharing a box with its two ring-neighbors but with a
+  genuine hole - no fifth grid - at the center). Picked from the Home screen
+  alongside the difficulty.
 - 9x9-per-grid Sudoku with cell notes (pencil marks) and status
   (given/entered). A note can only be added if it's still a legal
   candidate for the cell; a wrong number entry never erases existing
@@ -191,11 +199,12 @@ flutter test
 Covers: Solver (randomized fill, uniqueness check), Generator (uniqueness
 and reproducibility per difficulty level and per board layout), Validator
 (row/column/box conflicts, solved-state detection), PuzzleShape (bounding
-box, unit counts, shared-cell unit membership for Samurai/Twin), HintEngine
-(every implemented technique through Swordfish, difficulty rating),
-GameController (input, notes and their legality/preservation rules,
-undo/redo, hints, auto-solve-singles, auto-notes, autosave/resume, puzzle
-prewarming, leaderboard recording), LeaderboardService (ranking and
+box, unit counts, shared-cell unit membership for every non-classic
+layout), HintEngine (every implemented technique through Swordfish,
+difficulty rating), GameController (input, notes and their
+legality/preservation rules, undo/redo, hints, auto-solve-singles,
+auto-notes, autosave/resume, puzzle prewarming, leaderboard recording),
+LeaderboardService (ranking and
 per-difficulty-and-layout cap), Settings/GameState (defaults, JSON
 round-trips), the localized hint-text and label helpers, and widget tests
 for number entry, note entry, undo, the settings screen, the home screen
@@ -216,17 +225,20 @@ GameScreen/SettingsScreen/HomeScreen/SudokuBoardWidget UI.
   shows a corresponding warning). This is irrelevant for web builds.
 - **Puzzle generation on web**: `compute()` doesn't use a real OS thread on
   Flutter Web (web isolates/workers are limited), but instead runs
-  asynchronously on the same thread. This is a bigger deal for Samurai than
-  it was for classic puzzles alone: its much larger shared constraint system
-  makes every uniqueness check costlier, and generation time can spike
-  non-linearly below a clue-count threshold found empirically during
-  development (up to ~90s on some seeds even after a solver search
-  upgrade) - `Difficulty.clueCountFor` keeps Samurai's targets a comfortable
-  margin above that cliff. Twin's much smaller shared constraint system
-  hasn't shown the same cliff down to far lower clue counts. None of this
-  is true multithreading like on Android, so a slow generation still runs
-  on the same thread as the UI, just without blocking it noticeably in
-  practice.
+  asynchronously on the same thread. This is a bigger deal for the larger
+  multi-grid layouts than it was for classic puzzles alone: a bigger shared
+  constraint system makes every uniqueness check costlier, and generation
+  time can spike non-linearly below a clue-count threshold found
+  empirically during development - up to ~90s on some Samurai seeds even
+  after a solver search upgrade. `Difficulty.clueCountFor` keeps each
+  layout's targets a comfortable margin above its own cliff: found around
+  110-115 clues for Samurai (369 active cells), around 171 for Gattai-8 (576
+  active cells, the largest layout), and somewhere below 85 for Sohei (288
+  active cells; a run at 75 didn't finish in testing). Twin's much smaller
+  shared constraint system (153 active cells) hasn't shown the same cliff
+  down to far lower clue counts. None of this is true multithreading like
+  on Android, so a slow generation still runs on the same thread as the UI,
+  just without blocking it noticeably in practice.
 - **Difficulty rating**: The hint engine implements a substantial set of
   solving techniques (Naked/Hidden Single through Swordfish and XY-Wing; see
   Features above), and Easy/Medium/Hard puzzles are always solvable using
