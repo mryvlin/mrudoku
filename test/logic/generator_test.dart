@@ -53,21 +53,28 @@ void main() {
     }
   });
 
-  group('Generator - Samurai layout', () {
-    final shape = BoardLayout.samurai.shape;
+  testMultiGridLayout(BoardLayout.samurai, timeoutMs: 15000);
+  testMultiGridLayout(BoardLayout.twin, timeoutMs: 10000);
+  testMultiGridLayout(BoardLayout.gattai8, timeoutMs: 25000);
+  testMultiGridLayout(BoardLayout.sohei, timeoutMs: 15000);
+}
+
+/// Shared test group for a non-classic (multi-grid) [BoardLayout]: generates
+/// a uniquely solvable, correctly-solved puzzle at every difficulty within
+/// [timeoutMs] (a loose sanity bound on `Difficulty.clueCountFor`'s tuned
+/// constants for this layout, not a strict performance contract), and
+/// confirms a fixed seed reproduces the same puzzle.
+void testMultiGridLayout(BoardLayout layout, {required int timeoutMs}) {
+  group('Generator - $layout layout', () {
+    final shape = layout.shape;
 
     for (final difficulty in Difficulty.values) {
-      test('generates a uniquely solvable Samurai puzzle for $difficulty within a few seconds', () {
+      test('generates a uniquely solvable $layout puzzle for $difficulty within a few seconds', () {
         final stopwatch = Stopwatch()..start();
-        final generated = Generator.generate(difficulty, layout: BoardLayout.samurai, seed: 7);
+        final generated = Generator.generate(difficulty, layout: layout, seed: 7);
         stopwatch.stop();
 
-        // Hole-digging cost grows steeply as the clue count target drops
-        // (an empirical check during development found generation time
-        // exploding well past a minute below ~120 clues) - this is a loose
-        // sanity bound on the tuned constants in Difficulty.clueCountFor,
-        // not a strict performance contract.
-        expect(stopwatch.elapsedMilliseconds, lessThan(15000));
+        expect(stopwatch.elapsedMilliseconds, lessThan(timeoutMs));
 
         final puzzleGrid = generated.puzzle.toValueGrid();
         expect(Solver.hasUniqueSolution(puzzleGrid, shape), isTrue);
@@ -83,13 +90,13 @@ void main() {
         // count can come out at or above the target, never below it.
         final givenCount =
             shape.activeCells.where((pos) => generated.puzzle.cellAt(pos.$1, pos.$2).isGiven).length;
-        expect(givenCount, greaterThanOrEqualTo(difficulty.clueCountFor(BoardLayout.samurai)));
+        expect(givenCount, greaterThanOrEqualTo(difficulty.clueCountFor(layout)));
       });
     }
 
     test('is reproducible for a fixed seed', () {
-      final a = Generator.generate(Difficulty.medium, layout: BoardLayout.samurai, seed: 42);
-      final b = Generator.generate(Difficulty.medium, layout: BoardLayout.samurai, seed: 42);
+      final a = Generator.generate(Difficulty.medium, layout: layout, seed: 42);
+      final b = Generator.generate(Difficulty.medium, layout: layout, seed: 42);
       expect(a.puzzle.toValueGrid(), equals(b.puzzle.toValueGrid()));
       expect(a.solution.toValueGrid(), equals(b.solution.toValueGrid()));
     });

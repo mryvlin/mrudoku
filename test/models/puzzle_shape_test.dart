@@ -84,4 +84,114 @@ void main() {
       );
     });
   });
+
+  group('PuzzleShape.twin', () {
+    final shape = PuzzleShape.twin;
+
+    test('has a 15x15 bounding box with 153 active cells', () {
+      expect(shape.height, 15);
+      expect(shape.width, 15);
+      expect(shape.activeCells.length, 153);
+    });
+
+    test('has 53 units (2 grids x 27, minus 1 duplicate shared box)', () {
+      expect(shape.units.length, 53);
+      expect(shape.units.every((u) => u.cells.length == 9), isTrue);
+    });
+
+    test('an ordinary (non-shared) cell belongs to exactly 3 units', () {
+      expect(shape.unitsContaining(0, 0), hasLength(3));
+    });
+
+    test('the shared-box cell belongs to 5 units: two rows, two columns, one box', () {
+      // (7, 7) sits in the box shared between the two grids.
+      final units = shape.unitsContaining(7, 7);
+      expect(units, hasLength(5));
+      expect(units.where((u) => u.kind == UnitKind.row), hasLength(2));
+      expect(units.where((u) => u.kind == UnitKind.column), hasLength(2));
+      expect(units.where((u) => u.kind == UnitKind.box), hasLength(1));
+      expect(units.firstWhere((u) => u.kind == UnitKind.box).cells.toSet(), {
+        for (var r = 6; r <= 8; r++) for (var c = 6; c <= 8; c++) (r, c),
+      });
+    });
+  });
+
+  group('PuzzleShape.gattai8', () {
+    final shape = PuzzleShape.gattai8;
+
+    test('has a 21x33 bounding box with 576 active cells', () {
+      expect(shape.height, 21);
+      expect(shape.width, 33);
+      expect(shape.activeCells.length, 576);
+    });
+
+    test('has 208 units (8 grids x 27, minus 8 duplicate shared boxes)', () {
+      expect(shape.units.length, 208);
+      expect(shape.units.every((u) => u.cells.length == 9), isTrue);
+    });
+
+    test('an ordinary (non-shared) cell belongs to exactly 3 units', () {
+      expect(shape.unitsContaining(0, 0), hasLength(3));
+    });
+
+    test('the top-left grid shares a box with the first middle-row grid', () {
+      // (7, 7) sits in the box shared between the top-left grid (origin
+      // 0,0) and the first middle-row grid (origin 6,6).
+      final units = shape.unitsContaining(7, 7);
+      expect(units, hasLength(5));
+      expect(units.firstWhere((u) => u.kind == UnitKind.box).cells.toSet(), {
+        for (var r = 6; r <= 8; r++) for (var c = 6; c <= 8; c++) (r, c),
+      });
+    });
+
+    test('the gap between the two middle-row grids is inactive', () {
+      // The middle-row grids span cols 6-14 and 18-26; col 15-17 at a
+      // middle-only row (e.g. row 10) falls between them.
+      expect(shape.activeCells.contains((10, 15)), isFalse);
+      expect(shape.activeCells.contains((10, 16)), isFalse);
+      expect(shape.activeCells.contains((10, 17)), isFalse);
+    });
+  });
+
+  group('PuzzleShape.sohei', () {
+    final shape = PuzzleShape.sohei;
+
+    test('has a 21x21 bounding box with 288 active cells', () {
+      expect(shape.height, 21);
+      expect(shape.width, 21);
+      expect(shape.activeCells.length, 288);
+    });
+
+    test('has 104 units (4 grids x 27, minus 4 duplicate shared boxes)', () {
+      expect(shape.units.length, 104);
+      expect(shape.units.every((u) => u.cells.length == 9), isTrue);
+    });
+
+    test('an ordinary (non-shared) cell belongs to exactly 3 units', () {
+      expect(shape.unitsContaining(0, 6), hasLength(3));
+    });
+
+    test('the top and left grids share a box', () {
+      // (7, 7) sits in the box shared between the top grid (origin 0,6)
+      // and the left grid (origin 6,0).
+      final units = shape.unitsContaining(7, 7);
+      expect(units, hasLength(5));
+      expect(units.firstWhere((u) => u.kind == UnitKind.box).cells.toSet(), {
+        for (var r = 6; r <= 8; r++) for (var c = 6; c <= 8; c++) (r, c),
+      });
+    });
+
+    test('the center hole is inactive - unlike Samurai, no 5th grid fills it', () {
+      expect(shape.activeCells.contains((10, 10)), isFalse);
+    });
+
+    test('the top and bottom grids do not overlap - only ring-adjacent grids do', () {
+      // Top spans rows 0-8; bottom spans rows 12-20 - no shared box.
+      final topUnits = shape.unitsContaining(0, 10);
+      final bottomUnits = shape.unitsContaining(20, 10);
+      final topBox = topUnits.firstWhere((u) => u.kind == UnitKind.box).cells.toSet();
+      final bottomBox = bottomUnits.firstWhere((u) => u.kind == UnitKind.box).cells.toSet();
+      expect(topBox.intersection(bottomBox), isEmpty);
+    });
+  });
 }

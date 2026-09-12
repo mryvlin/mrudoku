@@ -362,6 +362,24 @@ abstract class AppLocalizations {
   /// **'Samurai'**
   String get boardLayoutSamurai;
 
+  /// Board layout name: two overlapping 9x9 grids sharing one box.
+  ///
+  /// In de, this message translates to:
+  /// **'Zwilling'**
+  String get boardLayoutTwin;
+
+  /// Board layout name: eight overlapping 9x9 grids in a 3-2-3 arrangement.
+  ///
+  /// In de, this message translates to:
+  /// **'Gattai-8'**
+  String get boardLayoutGattai8;
+
+  /// Board layout name: four overlapping 9x9 grids in a ring, with a hole in the center.
+  ///
+  /// In de, this message translates to:
+  /// **'Sohei'**
+  String get boardLayoutSohei;
+
   /// Toolbar button label.
   ///
   /// In de, this message translates to:

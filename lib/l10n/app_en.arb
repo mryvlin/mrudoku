@@ -56,6 +56,9 @@
 
   "boardLayoutClassic": "Classic",
   "boardLayoutSamurai": "Samurai",
+  "boardLayoutTwin": "Twin",
+  "boardLayoutGattai8": "Gattai-8",
+  "boardLayoutSohei": "Sohei",
 
   "undoLabel": "Undo",
   "redoLabel": "Redo",

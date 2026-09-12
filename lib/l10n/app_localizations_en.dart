@@ -149,6 +149,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get boardLayoutSamurai => 'Samurai';
 
   @override
+  String get boardLayoutTwin => 'Twin';
+
+  @override
+  String get boardLayoutGattai8 => 'Gattai-8';
+
+  @override
+  String get boardLayoutSohei => 'Sohei';
+
+  @override
   String get undoLabel => 'Undo';
 
   @override
