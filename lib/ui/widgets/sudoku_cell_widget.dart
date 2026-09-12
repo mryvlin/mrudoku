@@ -35,13 +35,18 @@ class SudokuCellWidget extends StatelessWidget {
   /// so it can be tuned independently of the app's overall theme.
   final Color highlightColor;
 
-  /// Multiplier applied to both the entered-value and pencil-mark-note font
-  /// sizes, on top of whatever `FittedBox` already shrinks to fit the
-  /// cell - lets a much denser board (Samurai) read a bit smaller/airier
-  /// than the largest size that would still technically fit, rather than
-  /// always rendering at that maximum. `1` (the default) reproduces
-  /// today's classic sizing exactly.
+  /// Multiplier applied to the entered-value font size, on top of whatever
+  /// `FittedBox` already shrinks to fit the cell - lets a much denser board
+  /// (Samurai) read a bit smaller/airier than the largest size that would
+  /// still technically fit, rather than always rendering at that maximum.
+  /// `1` (the default) reproduces today's classic sizing exactly.
   final double fontScale;
+
+  /// Same idea as [fontScale], but for pencil-mark notes specifically -
+  /// independent so notes can shrink by a different amount than entered
+  /// values (they're already smaller and in a tighter 3x3 sub-grid, so
+  /// Samurai typically wants a smaller factor here than for values).
+  final double noteFontScale;
 
   const SudokuCellWidget({
     super.key,
@@ -58,6 +63,7 @@ class SudokuCellWidget extends StatelessWidget {
     required this.highlightColor,
     this.highlightedValue = 0,
     this.fontScale = 1,
+    this.noteFontScale = 1,
   });
 
   @override
@@ -136,7 +142,7 @@ class SudokuCellWidget extends StatelessWidget {
     final normalStyle = theme.textTheme.labelSmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
       height: 1,
-      fontSize: 12 * fontScale,
+      fontSize: 12 * noteFontScale,
     );
     final matchingStyle = normalStyle?.copyWith(
       color: highlightColor,

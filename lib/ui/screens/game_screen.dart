@@ -352,8 +352,11 @@ class _Board extends StatelessWidget {
       // A bit smaller than the largest size that would still fit each of
       // Samurai's much denser cells, so digits and notes read a little
       // airier there instead of always filling every available pixel.
-      // Classic keeps its usual size unchanged.
+      // Notes get their own, smaller factor - they're already tiny (a 3x3
+      // sub-grid within the cell), so the same factor as entered values
+      // still reads cramped. Classic keeps its usual size unchanged.
       fontScale: isClassic ? 1 : 0.75,
+      noteFontScale: isClassic ? 1 : 0.6,
       onCellTap: onCellTap,
     );
     if (isClassic) return boardWidget;
