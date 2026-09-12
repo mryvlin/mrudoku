@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../models/board_layout.dart';
-import '../models/difficulty.dart';
-
 /// Fixed dark color palette for the Home screen's redesign - deliberately
 /// independent of `Theme.of(context)`/[AppThemeMode], since this look is
 /// meant to always show regardless of the user's light/dark/system theme
@@ -26,22 +23,4 @@ class HomePalette {
     end: Alignment.bottomRight,
     colors: [gradientStart, gradientEnd],
   );
-
-  /// Tag color for a leaderboard difficulty group. A non-classic layout
-  /// gets one shared accent (teal) regardless of difficulty, so a Samurai
-  /// time reads as visually distinct from a classic one at the same
-  /// difficulty rather than reusing that difficulty's own color.
-  static Color tagColor(Difficulty difficulty, BoardLayout layout) {
-    if (layout != BoardLayout.classic) return const Color(0xFF2DD4C8);
-    switch (difficulty) {
-      case Difficulty.easy:
-        return const Color(0xFF3DD68C);
-      case Difficulty.medium:
-        return const Color(0xFF4E9EF5);
-      case Difficulty.hard:
-        return const Color(0xFF9B6BF2);
-      case Difficulty.expert:
-        return const Color(0xFFE85D9E);
-    }
-  }
 }

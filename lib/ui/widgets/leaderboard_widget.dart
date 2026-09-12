@@ -83,22 +83,14 @@ class _DifficultySection extends StatelessWidget {
     final title = layout == BoardLayout.classic
         ? difficulty.label(l10n)
         : '${difficulty.label(l10n)} (${layout.label(l10n)})';
-    final tagColor = HomePalette.tagColor(difficulty, layout);
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: tagColor.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              title,
-              style: TextStyle(color: tagColor, fontWeight: FontWeight.w700, fontSize: 12),
-            ),
+          Text(
+            title,
+            style: const TextStyle(color: HomePalette.mutedText, fontWeight: FontWeight.w700, fontSize: 12),
           ),
           for (var i = 0; i < entries.length; i++)
             Padding(

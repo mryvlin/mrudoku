@@ -360,7 +360,6 @@ class _DifficultySelector extends StatelessWidget {
         for (final difficulty in Difficulty.values)
           _DifficultyPill(
             key: ValueKey('difficulty-${difficulty.name}'),
-            difficulty: difficulty,
             isSelected: difficulty == selected,
             label: difficulty.label(l10n),
             onTap: enabled ? () => onSelected(difficulty) : null,
@@ -371,31 +370,16 @@ class _DifficultySelector extends StatelessWidget {
 }
 
 class _DifficultyPill extends StatelessWidget {
-  final Difficulty difficulty;
   final bool isSelected;
   final String label;
   final VoidCallback? onTap;
 
   const _DifficultyPill({
     super.key,
-    required this.difficulty,
     required this.isSelected,
     required this.label,
     required this.onTap,
   });
-
-  Widget _icon(Color color) {
-    switch (difficulty) {
-      case Difficulty.easy:
-        return Icon(Icons.circle_outlined, size: 14, color: color);
-      case Difficulty.medium:
-        return _Dots(count: 2, color: color);
-      case Difficulty.hard:
-        return _Dots(count: 3, color: color);
-      case Difficulty.expert:
-        return Icon(Icons.grid_view_rounded, size: 14, color: color);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -411,36 +395,8 @@ class _DifficultyPill extends StatelessWidget {
           border: isSelected ? null : Border.all(color: HomePalette.border),
           borderRadius: BorderRadius.circular(999),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _icon(color),
-            const SizedBox(width: 8),
-            Text(label, style: TextStyle(color: color, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500)),
-          ],
-        ),
+        child: Text(label, style: TextStyle(color: color, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500)),
       ),
-    );
-  }
-}
-
-class _Dots extends StatelessWidget {
-  final int count;
-  final Color color;
-
-  const _Dots({required this.count, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < count; i++)
-          Padding(
-            padding: EdgeInsets.only(left: i == 0 ? 0 : 3),
-            child: Container(width: 5, height: 5, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-          ),
-      ],
     );
   }
 }
