@@ -68,22 +68,19 @@ class SudokuBoardWidget extends StatelessWidget {
     return relevantUnits.any((u) => u.cells.contains((row, col)));
   }
 
-  /// A thick border belongs between (row, col) and its neighbor [size]
-  /// cells away in one direction whenever that neighbor either isn't the
-  /// same box (a genuine box boundary) or doesn't exist at all (the true
-  /// edge of one of the shape's constituent grids) - as long as the
-  /// neighbor is still within the shape's overall bounding box, since a
-  /// true bounding-box edge is instead framed by this widget's own outer
-  /// border.
-  bool _needsInnerBorder(int row, int col, int otherRow, int otherCol) {
-    if (otherRow < 0 || otherRow >= board.shape.height || otherCol < 0 || otherCol >= board.shape.width) {
-      return false;
-    }
-    final other = (otherRow, otherCol);
-    if (!board.shape.activeCells.contains(other)) return true;
-    final ownBoxes = board.unitsContaining(row, col).where((u) => u.kind == UnitKind.box);
-    return !ownBoxes.any((u) => u.cells.contains(other));
-  }
+  /// A thick line belongs at global coordinate [c] (a row or column index)
+  /// whenever it's a multiple of the box size - true for every real box
+  /// boundary AND every constituent grid's outer edge in any of these
+  /// layouts, since two 9x9 grids can only share exactly one box (what
+  /// makes Samurai/Twin/Gattai-8/Sohei recognizable as that pattern at all)
+  /// by sitting a multiple of `kBoxSize` apart - so every grid's origin,
+  /// and therefore every one of its box boundaries and edges, always lands
+  /// on a global multiple of `kBoxSize`. Using that directly - instead of
+  /// asking whether two specific cells share a box - guarantees every
+  /// vertical line lines up with every other vertical line at the same
+  /// column across the whole shape, and likewise for rows, rather than
+  /// relying on that falling out of the box-sharing check by coincidence.
+  static bool _isBoxBoundary(int c) => c % kBoxSize == 0;
 
   @override
   Widget build(BuildContext context) {
@@ -131,10 +128,12 @@ class SudokuBoardWidget extends StatelessWidget {
               isPeerHighlighted: isPeer,
               isSameValueHighlighted: isSameValue,
               isError: isError,
-              isThickRightBorder: _needsInnerBorder(row, col, row, col + 1),
-              isThickBottomBorder: _needsInnerBorder(row, col, row + 1, col),
-              isThickLeftBorder: col > 0 && !shape.activeCells.contains((row, col - 1)),
-              isThickTopBorder: row > 0 && !shape.activeCells.contains((row - 1, col)),
+              isThickRightBorder: col + 1 < shape.width && _isBoxBoundary(col + 1),
+              isThickBottomBorder: row + 1 < shape.height && _isBoxBoundary(row + 1),
+              isThickLeftBorder:
+                  col > 0 && _isBoxBoundary(col) && !shape.activeCells.contains((row, col - 1)),
+              isThickTopBorder:
+                  row > 0 && _isBoxBoundary(row) && !shape.activeCells.contains((row - 1, col)),
               highlightedValue: highlightEnabled ? selectedValue : 0,
               highlightColor: resolvedHighlight,
               onTap: () => onCellTap(row, col),
