@@ -1,7 +1,9 @@
 import 'dart:math';
 
 import '../models/board.dart';
+import '../models/board_layout.dart';
 import '../models/difficulty.dart';
+import '../models/puzzle_shape.dart';
 import 'hint_engine.dart';
 import 'solver.dart';
 
@@ -19,74 +21,88 @@ class GeneratedPuzzle {
 ///
 /// Pure Dart, no Flutter dependency, so it can run inside a background
 /// isolate (see `PuzzleGenerationService`) without touching the UI thread -
-/// generation, especially for Hard/Expert, involves a fair amount of
-/// backtracking-based uniqueness checking.
+/// generation, especially for Hard/Expert (and more so for Samurai, whose
+/// much larger shared constraint system makes every uniqueness check
+/// costlier), involves a fair amount of backtracking-based checking.
 class Generator {
   const Generator._();
 
-  /// Generates a puzzle for [difficulty]. Passing [seed] makes the result
-  /// reproducible, which is mainly useful for tests.
-  static GeneratedPuzzle generate(Difficulty difficulty, {int? seed}) {
+  /// Generates a puzzle for [difficulty] on [layout] (classic by default).
+  /// Passing [seed] makes the result reproducible, which is mainly useful
+  /// for tests.
+  static GeneratedPuzzle generate(Difficulty difficulty, {BoardLayout layout = BoardLayout.classic, int? seed}) {
     final random = seed != null ? Random(seed) : Random();
+    final shape = layout.shape;
 
     // 1. Build a fully solved, valid Sudoku grid via randomized backtracking.
-    final solutionGrid = Solver.emptyGrid();
-    final filled = Solver.fillRandomized(solutionGrid, random);
+    final solutionGrid = Solver.emptyGrid(shape);
+    final filled = Solver.fillRandomized(solutionGrid, random, shape);
     assert(filled, 'A random fill from an empty grid should always succeed');
-    final solutionBoard = Board.fromValues(solutionGrid);
+    final solutionBoard = Board.fromValues(solutionGrid, shape: shape);
 
     // 2. Dig holes (remove cells) while preserving a unique solution, aiming
-    //    for the difficulty's target clue count. If the result turns out
-    //    logically *harder* than the difficulty allows - a real risk at low
-    //    clue counts, where a random hole layout can easily force advanced
-    //    techniques or outright backtracking - retry with a different
-    //    removal order; a handful of attempts is enough in practice. Among
-    //    attempts that never land within the allowed range, keep the
-    //    least-too-hard one rather than whichever was dug last, so a
-    //    maxAttempts-exhausted fallback is still as close to correct as
-    //    possible instead of essentially random.
-    const maxAttempts = 5;
-    Board bestPuzzle = Board.fromValues(solutionGrid);
+    //    for the difficulty's target clue count, then keep the *hardest*
+    //    attempt that's still within the difficulty's allowed technique
+    //    range - a random removal order can easily land on an easy layout
+    //    even at a clue count that could support a much harder one, so
+    //    stopping at the first attempt within range (as this used to)
+    //    under-sells what the clue count could deliver. Falls back to the
+    //    least-too-hard attempt only if none ever land within range.
+    const maxAttempts = 8;
+    Board bestPuzzle = Board.fromValues(solutionGrid, shape: shape);
     var bestRank = -1;
     for (var attempt = 0; attempt < maxAttempts; attempt++) {
-      final puzzle = _digHoles(solutionGrid, difficulty, random);
+      final puzzle = _digHoles(solutionGrid, difficulty, layout, shape, random);
       if (difficulty == Difficulty.easy) {
         bestPuzzle = puzzle;
         break; // clue count alone suffices
       }
       final rank = HintEngine.rateDifficulty(puzzle).rank;
-      if (attempt == 0 || rank < bestRank) {
+      if (attempt == 0 || _isBetterAttempt(rank, bestRank, difficulty.maxAllowedTechniqueRank)) {
         bestPuzzle = puzzle;
         bestRank = rank;
       }
-      if (rank <= difficulty.maxAllowedTechniqueRank) break; // within the allowed range
+      if (bestRank == difficulty.maxAllowedTechniqueRank) break; // can't beat the cap itself
     }
 
     return GeneratedPuzzle(puzzle: bestPuzzle, solution: solutionBoard, difficulty: difficulty);
   }
 
-  static Board _digHoles(Grid solutionGrid, Difficulty difficulty, Random random) {
+  /// Whether [rank] should replace [currentBestRank] as the best puzzle
+  /// found so far: any attempt within [cap] beats any attempt over it: and
+  /// among attempts on the same side of the cap, prefer the harder one
+  /// within it, or the least-too-hard one over it.
+  static bool _isBetterAttempt(int rank, int currentBestRank, int cap) {
+    final withinCap = rank <= cap;
+    final currentWithinCap = currentBestRank <= cap;
+    if (withinCap != currentWithinCap) return withinCap;
+    return withinCap ? rank > currentBestRank : rank < currentBestRank;
+  }
+
+  static Board _digHoles(
+    Grid solutionGrid,
+    Difficulty difficulty,
+    BoardLayout layout,
+    PuzzleShape shape,
+    Random random,
+  ) {
     final working = Solver.cloneGrid(solutionGrid);
-    final positions = [
-      for (var r = 0; r < kBoardSize; r++)
-        for (var c = 0; c < kBoardSize; c++) [r, c],
-    ]..shuffle(random);
+    final positions = shape.activeCells.toList()..shuffle(random);
 
-    var remaining = kBoardSize * kBoardSize;
-    final targetClues = difficulty.clueCount;
+    var remaining = shape.activeCells.length;
+    final targetClues = difficulty.clueCountFor(layout);
 
-    for (final pos in positions) {
+    for (final (r, c) in positions) {
       if (remaining <= targetClues) break;
-      final r = pos[0], c = pos[1];
       final backup = working[r][c];
       working[r][c] = 0;
-      if (Solver.hasUniqueSolution(working)) {
+      if (Solver.hasUniqueSolution(working, shape)) {
         remaining--;
       } else {
         working[r][c] = backup;
       }
     }
 
-    return Board.fromValues(working);
+    return Board.fromValues(working, shape: shape);
   }
 }

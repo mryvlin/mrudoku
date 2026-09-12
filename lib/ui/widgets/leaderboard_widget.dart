@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../models/board_layout.dart';
 import '../../models/difficulty.dart';
 import '../../models/leaderboard_entry.dart';
+import '../board_layout_labels.dart';
 import '../difficulty_labels.dart';
 import '../format_duration.dart';
 
@@ -22,9 +24,9 @@ class LeaderboardWidget extends StatelessWidget {
     if (entries.isEmpty) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
-    final byDifficulty = <Difficulty, List<LeaderboardEntry>>{};
+    final byGroup = <(Difficulty, BoardLayout), List<LeaderboardEntry>>{};
     for (final entry in entries) {
-      byDifficulty.putIfAbsent(entry.difficulty, () => []).add(entry);
+      byGroup.putIfAbsent((entry.difficulty, entry.layout), () => []).add(entry);
     }
 
     return Card(
@@ -41,14 +43,16 @@ class LeaderboardWidget extends StatelessWidget {
                 Text(AppLocalizations.of(context)!.leaderboardTitle, style: theme.textTheme.titleMedium),
               ],
             ),
-            for (final difficulty in Difficulty.values)
-              if (byDifficulty[difficulty] case final difficultyEntries?)
-                _DifficultySection(
-                  difficulty: difficulty,
-                  entries: (difficultyEntries..sort((a, b) => a.elapsedSeconds.compareTo(b.elapsedSeconds)))
-                      .take(_rowsPerDifficulty)
-                      .toList(),
-                ),
+            for (final layout in BoardLayout.values)
+              for (final difficulty in Difficulty.values)
+                if (byGroup[(difficulty, layout)] case final groupEntries?)
+                  _DifficultySection(
+                    difficulty: difficulty,
+                    layout: layout,
+                    entries: (groupEntries..sort((a, b) => a.elapsedSeconds.compareTo(b.elapsedSeconds)))
+                        .take(_rowsPerDifficulty)
+                        .toList(),
+                  ),
           ],
         ),
       ),
@@ -58,20 +62,28 @@ class LeaderboardWidget extends StatelessWidget {
 
 class _DifficultySection extends StatelessWidget {
   final Difficulty difficulty;
+  final BoardLayout layout;
   final List<LeaderboardEntry> entries;
 
-  const _DifficultySection({required this.difficulty, required this.entries});
+  const _DifficultySection({required this.difficulty, required this.layout, required this.entries});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    // Classic keeps its plain difficulty label unchanged; only a
+    // non-classic layout gets an extra suffix, so today's leaderboard
+    // display doesn't change at all until a Samurai game is won.
+    final title = layout == BoardLayout.classic
+        ? difficulty.label(l10n)
+        : '${difficulty.label(l10n)} (${layout.label(l10n)})';
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            difficulty.label(AppLocalizations.of(context)!),
+            title,
             style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary),
           ),
           for (var i = 0; i < entries.length; i++)

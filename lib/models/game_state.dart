@@ -1,4 +1,5 @@
 import 'board.dart';
+import 'board_layout.dart';
 import 'difficulty.dart';
 
 /// Full state of one Sudoku game in progress: the mutable board, the
@@ -11,6 +12,7 @@ class GameState {
   final Board board;
   final Board solution;
   final Difficulty difficulty;
+  final BoardLayout layout;
   final int elapsedSeconds;
   final int mistakes;
   final int maxMistakes;
@@ -34,6 +36,7 @@ class GameState {
     required this.board,
     required this.solution,
     required this.difficulty,
+    this.layout = BoardLayout.classic,
     this.elapsedSeconds = 0,
     this.mistakes = 0,
     this.maxMistakes = 3,
@@ -60,6 +63,7 @@ class GameState {
     Board? board,
     Board? solution,
     Difficulty? difficulty,
+    BoardLayout? layout,
     int? elapsedSeconds,
     int? mistakes,
     int? maxMistakes,
@@ -80,6 +84,7 @@ class GameState {
       board: board ?? this.board,
       solution: solution ?? this.solution,
       difficulty: difficulty ?? this.difficulty,
+      layout: layout ?? this.layout,
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
       mistakes: mistakes ?? this.mistakes,
       maxMistakes: maxMistakes ?? this.maxMistakes,
@@ -103,6 +108,7 @@ class GameState {
         'board': board.toJson(),
         'solution': solution.toJson(),
         'difficulty': difficulty.name,
+        'layout': layout.name,
         'elapsedSeconds': elapsedSeconds,
         'mistakes': mistakes,
         'maxMistakes': maxMistakes,
@@ -114,18 +120,26 @@ class GameState {
         'isWon': isWon,
       };
 
-  factory GameState.fromJson(Map<String, dynamic> json) => GameState(
-        board: Board.fromJson(json['board'] as Map<String, dynamic>),
-        solution: Board.fromJson(json['solution'] as Map<String, dynamic>),
-        difficulty: Difficulty.values.firstWhere((d) => d.name == json['difficulty']),
-        elapsedSeconds: json['elapsedSeconds'] as int? ?? 0,
-        mistakes: json['mistakes'] as int? ?? 0,
-        maxMistakes: json['maxMistakes'] as int? ?? 3,
-        errorLimitEnabled: json['errorLimitEnabled'] as bool? ?? true,
-        hintsUsed: json['hintsUsed'] as int? ?? 0,
-        maxHints: json['maxHints'] as int? ?? 5,
-        notesMode: json['notesMode'] as bool? ?? false,
-        autoSolveSingles: json['autoSolveSingles'] as bool? ?? false,
-        isWon: json['isWon'] as bool? ?? false,
-      );
+  factory GameState.fromJson(Map<String, dynamic> json) {
+    final layout = BoardLayout.values.firstWhere(
+      (l) => l.name == json['layout'],
+      orElse: () => BoardLayout.classic,
+    );
+    final shape = layout.shape;
+    return GameState(
+      board: Board.fromJson(json['board'] as Map<String, dynamic>, shape: shape),
+      solution: Board.fromJson(json['solution'] as Map<String, dynamic>, shape: shape),
+      difficulty: Difficulty.values.firstWhere((d) => d.name == json['difficulty']),
+      layout: layout,
+      elapsedSeconds: json['elapsedSeconds'] as int? ?? 0,
+      mistakes: json['mistakes'] as int? ?? 0,
+      maxMistakes: json['maxMistakes'] as int? ?? 3,
+      errorLimitEnabled: json['errorLimitEnabled'] as bool? ?? true,
+      hintsUsed: json['hintsUsed'] as int? ?? 0,
+      maxHints: json['maxHints'] as int? ?? 5,
+      notesMode: json['notesMode'] as bool? ?? false,
+      autoSolveSingles: json['autoSolveSingles'] as bool? ?? false,
+      isWon: json['isWon'] as bool? ?? false,
+    );
+  }
 }

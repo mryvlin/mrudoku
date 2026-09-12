@@ -1,9 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mrsudoku/logic/candidates.dart';
+import 'package:mrsudoku/logic/generator.dart';
 import 'package:mrsudoku/logic/providers.dart';
 import 'package:mrsudoku/logic/validator.dart';
 import 'package:mrsudoku/models/board.dart';
+import 'package:mrsudoku/models/board_layout.dart';
+import 'package:mrsudoku/models/cell.dart';
 import 'package:mrsudoku/models/difficulty.dart';
 import 'package:mrsudoku/models/game_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -65,6 +68,27 @@ void main() {
     expect(state().board.isFull, isFalse);
     expect(Validator.isSolved(state().solution), isTrue);
   });
+
+  test(
+    'starting another game at the same difficulty and layout consumes the puzzle prewarmed '
+    'after the previous one started, and still produces a valid, independent puzzle',
+    () async {
+      // setUp already started one Easy/classic game, which itself kicks off
+      // a prewarm for another Easy/classic puzzle - exactly the case this
+      // exercises.
+      final firstBoard = state().board;
+
+      await controller.startNewGame(Difficulty.easy, maxMistakes: 3, errorLimitEnabled: true, maxHints: 5);
+
+      expect(state().difficulty, Difficulty.easy);
+      expect(state().layout, BoardLayout.classic);
+      expect(Validator.isSolved(state().solution), isTrue);
+      // Overwhelmingly unlikely to coincide by chance for an unseeded
+      // generation - confirms this really is a fresh puzzle, not the same
+      // board object reused.
+      expect(state().board.toValueGrid(), isNot(firstBoard.toValueGrid()));
+    },
+  );
 
   test('a second concurrent startNewGame call is ignored while one is already generating', () async {
     // Kick off two overlapping calls (as a double-tapped difficulty button
@@ -578,5 +602,40 @@ void main() {
     expect(leaderboard, hasLength(1));
     expect(leaderboard.single.difficulty, Difficulty.easy);
     expect(leaderboard.single.elapsedSeconds, state().elapsedSeconds);
+  });
+
+  group('Samurai layout', () {
+    test('can be completed and records a leaderboard entry tagged with the Samurai layout', () async {
+      final shape = BoardLayout.samurai.shape;
+      final generated = Generator.generate(Difficulty.easy, layout: BoardLayout.samurai, seed: 3);
+      final solutionValues = generated.solution.toValueGrid();
+
+      controller.restore(GameState(
+        board: generated.solution, // start fully solved except for one cell, below
+        solution: generated.solution,
+        difficulty: Difficulty.easy,
+        layout: BoardLayout.samurai,
+      ));
+
+      // Clear exactly one active cell so the game isn't already won, forcing
+      // the player to make one final move.
+      final lastCell = shape.activeCells.first;
+      controller.restore(state().copyWith(
+        board: state().board.setCell(lastCell.$1, lastCell.$2, const Cell()),
+      ));
+      expect(state().isWon, isFalse);
+
+      controller.selectCell(lastCell.$1, lastCell.$2);
+      controller.inputNumber(solutionValues[lastCell.$1][lastCell.$2]);
+
+      expect(state().isWon, isTrue);
+      expect(state().board.shape.activeCells, shape.activeCells);
+
+      await pumpEventQueue();
+      final leaderboard = container.read(leaderboardControllerProvider);
+      expect(leaderboard, hasLength(1));
+      expect(leaderboard.single.difficulty, Difficulty.easy);
+      expect(leaderboard.single.layout, BoardLayout.samurai);
+    });
   });
 }

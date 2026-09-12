@@ -12,9 +12,8 @@ class Candidates {
   static Set<int> forCell(Board board, int row, int col) {
     final ownValue = board.cellAt(row, col).value;
     final used = <int>{
-      ...board.rowCells(row).map((c) => c.value),
-      ...board.columnCells(col).map((c) => c.value),
-      ...board.boxCellsContaining(row, col).map((c) => c.value),
+      for (final unit in board.unitsContaining(row, col))
+        for (final (r, c) in unit.cells) board.cellAt(r, c).value,
     }
       ..remove(0)
       ..remove(ownValue);
@@ -25,7 +24,7 @@ class Candidates {
   /// candidates for empty cells (all current ones) must filter by
   /// `Board.cellAt(r, c).isEmpty` themselves - see the class doc above.
   static List<List<Set<int>>> forBoard(Board board) => [
-        for (var r = 0; r < kBoardSize; r++)
-          [for (var c = 0; c < kBoardSize; c++) forCell(board, r, c)],
+        for (var r = 0; r < board.shape.height; r++)
+          [for (var c = 0; c < board.shape.width; c++) forCell(board, r, c)],
       ];
 }

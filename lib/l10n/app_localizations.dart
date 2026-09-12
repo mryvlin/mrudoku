@@ -350,6 +350,18 @@ abstract class AppLocalizations {
   /// **'Experte'**
   String get difficultyExpert;
 
+  /// Board layout name: a single 9x9 grid.
+  ///
+  /// In de, this message translates to:
+  /// **'Klassisch'**
+  String get boardLayoutClassic;
+
+  /// Board layout name: five overlapping 9x9 grids in a cross.
+  ///
+  /// In de, this message translates to:
+  /// **'Samurai'**
+  String get boardLayoutSamurai;
+
   /// Toolbar button label.
   ///
   /// In de, this message translates to:

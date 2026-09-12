@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/board.dart';
+import '../models/board_layout.dart';
 import '../models/difficulty.dart';
 import '../models/game_state.dart';
 import '../models/leaderboard_entry.dart';
@@ -11,6 +12,7 @@ import '../services/game_persistence_service.dart';
 import '../services/puzzle_generation_service.dart';
 import '../services/sound_service.dart';
 import 'candidates.dart';
+import 'generator.dart';
 import 'hint_engine.dart';
 import 'leaderboard_controller.dart';
 import 'service_providers.dart';
@@ -27,6 +29,16 @@ class GameController extends Notifier<GameState?> {
   bool isGenerating = false;
   int _ticksSinceSave = 0;
   Timer? _saveDebounce;
+
+  /// A puzzle generated speculatively for the same (difficulty, layout) as
+  /// whatever game is currently running, kicked off by [_prewarmNext] right
+  /// after that game started - so if the player plays another round at the
+  /// same difficulty and layout next, [startNewGame] can hand it over
+  /// immediately instead of making them wait through generation again.
+  /// `null` whenever nothing's prewarmed (e.g. fresh app launch) or the last
+  /// prewarm has already been consumed.
+  (Difficulty, BoardLayout)? _prewarmedKey;
+  Future<GeneratedPuzzle>? _prewarmedPuzzle;
 
   /// How long a routine edit (a keystroke, a notes toggle, undo/redo, ...)
   /// waits before actually hitting disk, coalescing a burst of edits into
@@ -54,6 +66,7 @@ class GameController extends Notifier<GameState?> {
     required int maxMistakes,
     required bool errorLimitEnabled,
     required int maxHints,
+    BoardLayout layout = BoardLayout.classic,
   }) async {
     // Guards against a second generation racing this one - e.g. a
     // double-tapped difficulty button on Home - which would otherwise let
@@ -62,22 +75,52 @@ class GameController extends Notifier<GameState?> {
     isGenerating = true;
     state = null;
     try {
-      final generated = await PuzzleGenerationService.generate(difficulty);
+      final generated = await _takePuzzle(difficulty, layout);
       state = GameState(
         board: generated.puzzle,
         solution: generated.solution,
         difficulty: difficulty,
+        layout: layout,
         maxMistakes: maxMistakes,
         errorLimitEnabled: errorLimitEnabled,
         maxHints: maxHints,
       );
       await _persist();
+      _prewarmNext(difficulty, layout);
     } finally {
       isGenerating = false;
     }
   }
 
-  void restore(GameState saved) => state = saved;
+  /// Either hands back the puzzle [_prewarmNext] already started generating
+  /// for this exact (difficulty, layout), or - if nothing's prewarmed, or
+  /// it's prewarmed for a different combination - generates fresh exactly
+  /// as if prewarming didn't exist.
+  Future<GeneratedPuzzle> _takePuzzle(Difficulty difficulty, BoardLayout layout) {
+    final prewarmed = _prewarmedPuzzle;
+    if (prewarmed != null && _prewarmedKey == (difficulty, layout)) {
+      _prewarmedKey = null;
+      _prewarmedPuzzle = null;
+      return prewarmed;
+    }
+    return PuzzleGenerationService.generate(difficulty, layout: layout);
+  }
+
+  /// Speculatively generates the next (difficulty, layout) puzzle in the
+  /// background while the player works on the one just started. A stale
+  /// prewarm left over from a different (difficulty, layout) - the player
+  /// picked something else next - is simply overwritten/ignored and left to
+  /// finish and be discarded on its own; a `compute()` isolate isn't worth
+  /// the complexity of cancelling for a case this harmless.
+  void _prewarmNext(Difficulty difficulty, BoardLayout layout) {
+    _prewarmedKey = (difficulty, layout);
+    _prewarmedPuzzle = PuzzleGenerationService.generate(difficulty, layout: layout);
+  }
+
+  void restore(GameState saved) {
+    state = saved;
+    _prewarmNext(saved.difficulty, saved.layout);
+  }
 
   Future<void> abandonGame() async {
     state = null;
@@ -222,7 +265,7 @@ class GameController extends Notifier<GameState?> {
     if (Validator.isSolved(newBoard)) {
       newState = newState.copyWith(isWon: true);
       _sound.win();
-      _recordWin(s.difficulty, newState.elapsedSeconds);
+      _recordWin(s.difficulty, s.layout, newState.elapsedSeconds);
     }
 
     state = newState;
@@ -283,12 +326,10 @@ class GameController extends Notifier<GameState?> {
     if (s == null || _locked(s)) return;
     final candidates = Candidates.forBoard(s.board);
     var newBoard = s.board;
-    for (var r = 0; r < kBoardSize; r++) {
-      for (var c = 0; c < kBoardSize; c++) {
-        final cell = newBoard.cellAt(r, c);
-        if (!cell.isEmpty) continue;
-        newBoard = newBoard.setCell(r, c, cell.copyWith(notes: candidates[r][c]));
-      }
+    for (final (r, c) in s.board.shape.activeCells) {
+      final cell = newBoard.cellAt(r, c);
+      if (!cell.isEmpty) continue;
+      newBoard = newBoard.setCell(r, c, cell.copyWith(notes: candidates[r][c]));
     }
     state = _withHistory(s, newBoard);
     _sound.tap();
@@ -362,7 +403,7 @@ class GameController extends Notifier<GameState?> {
     if (Validator.isSolved(newBoard)) {
       newState = newState.copyWith(isWon: true);
       _sound.win();
-      _recordWin(s.difficulty, newState.elapsedSeconds);
+      _recordWin(s.difficulty, s.layout, newState.elapsedSeconds);
     }
 
     state = newState;
@@ -375,10 +416,11 @@ class GameController extends Notifier<GameState?> {
     }
   }
 
-  void _recordWin(Difficulty difficulty, int elapsedSeconds) {
+  void _recordWin(Difficulty difficulty, BoardLayout layout, int elapsedSeconds) {
     ref.read(leaderboardControllerProvider.notifier).addEntry(
           LeaderboardEntry(
             difficulty: difficulty,
+            layout: layout,
             elapsedSeconds: elapsedSeconds,
             achievedAt: DateTime.now(),
           ),
@@ -392,38 +434,27 @@ class GameController extends Notifier<GameState?> {
     return s.copyWith(board: newBoard, undoStack: newUndo, redoStack: const []);
   }
 
-  /// Removes [value] from the pencil marks of every peer (same row, column
-  /// and box) of (row, col) - a common QoL touch once a number is placed.
+  /// Removes [value] from the pencil marks of every peer of (row, col) -
+  /// every other cell sharing one of its units (row, column and box on a
+  /// classic board; up to two rows, two columns and a shared box at a
+  /// Samurai shared-box cell) - a common QoL touch once a number is placed.
   Board _stripNoteFromPeers(Board board, int row, int col, int value) {
     var result = board;
-    void stripAt(int r, int c) {
-      if (r == row && c == col) return;
+    final peers = <(int, int)>{
+      for (final unit in board.unitsContaining(row, col)) ...unit.cells,
+    }..remove((row, col));
+    for (final (r, c) in peers) {
       final cell = result.cellAt(r, c);
       if (cell.notes.contains(value)) {
         result = result.setCell(r, c, cell.copyWith(notes: {...cell.notes}..remove(value)));
-      }
-    }
-
-    for (var c = 0; c < kBoardSize; c++) {
-      stripAt(row, c);
-    }
-    for (var r = 0; r < kBoardSize; r++) {
-      stripAt(r, col);
-    }
-    final (boxRow, boxCol) = boxOrigin(row, col);
-    for (var r = boxRow; r < boxRow + kBoxSize; r++) {
-      for (var c = boxCol; c < boxCol + kBoxSize; c++) {
-        stripAt(r, c);
       }
     }
     return result;
   }
 
   (int, int)? _firstEmptyCell(Board board) {
-    for (var r = 0; r < kBoardSize; r++) {
-      for (var c = 0; c < kBoardSize; c++) {
-        if (board.cellAt(r, c).isEmpty) return (r, c);
-      }
+    for (final (r, c) in board.shape.activeCells) {
+      if (board.cellAt(r, c).isEmpty) return (r, c);
     }
     return null;
   }
@@ -474,7 +505,7 @@ class GameController extends Notifier<GameState?> {
         if (Validator.isSolved(newBoard)) {
           newState = newState.copyWith(isWon: true);
           _sound.win();
-          _recordWin(newState.difficulty, newState.elapsedSeconds);
+          _recordWin(newState.difficulty, newState.layout, newState.elapsedSeconds);
         }
 
         state = newState;
@@ -492,12 +523,10 @@ class GameController extends Notifier<GameState?> {
   /// The first empty cell with exactly one legal candidate, if any - see
   /// `Candidates.forCell` for why non-empty cells must be filtered out here.
   (int, int, int)? _firstNakedSingle(Board board) {
-    for (var r = 0; r < kBoardSize; r++) {
-      for (var c = 0; c < kBoardSize; c++) {
-        if (!board.cellAt(r, c).isEmpty) continue;
-        final candidates = Candidates.forCell(board, r, c);
-        if (candidates.length == 1) return (r, c, candidates.first);
-      }
+    for (final (r, c) in board.shape.activeCells) {
+      if (!board.cellAt(r, c).isEmpty) continue;
+      final candidates = Candidates.forCell(board, r, c);
+      if (candidates.length == 1) return (r, c, candidates.first);
     }
     return null;
   }
@@ -506,12 +535,10 @@ class GameController extends Notifier<GameState?> {
   /// [GameState.solution] has there - a mistake the player hasn't erased
   /// yet, even though it may not break any row/column/box rule on its own.
   bool _hasWrongEntry(GameState s) {
-    for (var r = 0; r < kBoardSize; r++) {
-      for (var c = 0; c < kBoardSize; c++) {
-        final cell = s.board.cellAt(r, c);
-        if (cell.isGiven || cell.isEmpty) continue;
-        if (cell.value != s.solution.cellAt(r, c).value) return true;
-      }
+    for (final (r, c) in s.board.shape.activeCells) {
+      final cell = s.board.cellAt(r, c);
+      if (cell.isGiven || cell.isEmpty) continue;
+      if (cell.value != s.solution.cellAt(r, c).value) return true;
     }
     return false;
   }

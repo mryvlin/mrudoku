@@ -125,6 +125,11 @@
   "difficultyExpert": "Experte",
   "@difficultyExpert": {"description": "Difficulty level name."},
 
+  "boardLayoutClassic": "Klassisch",
+  "@boardLayoutClassic": {"description": "Board layout name: a single 9x9 grid."},
+  "boardLayoutSamurai": "Samurai",
+  "@boardLayoutSamurai": {"description": "Board layout name: five overlapping 9x9 grids in a cross."},
+
   "undoLabel": "Rückgängig",
   "@undoLabel": {"description": "Toolbar button label."},
   "redoLabel": "Wiederholen",

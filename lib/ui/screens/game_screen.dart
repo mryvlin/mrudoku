@@ -7,6 +7,9 @@ import '../../l10n/app_localizations.dart';
 import '../../logic/hint_engine.dart';
 import '../../logic/providers.dart';
 import '../../models/board.dart';
+import '../../models/board_layout.dart';
+import '../../models/puzzle_shape.dart';
+import '../../models/settings.dart';
 import '../difficulty_labels.dart';
 import '../format_duration.dart';
 import '../hint_text.dart';
@@ -147,7 +150,8 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
                           ? _PausedOverlay(
                               onResume: () => ref.read(gameControllerProvider.notifier).togglePause(),
                             )
-                          : SudokuBoardWidget(
+                          : _Board(
+                              layout: gameState.layout,
                               board: gameState.board,
                               solution: gameState.solution,
                               selectedRow: gameState.selectedRow,
@@ -216,12 +220,18 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
   }
 
   Map<int, int> _remainingCounts(Board board) {
-    final counts = <int, int>{for (var v = 1; v <= 9; v++) v: 9};
-    for (var r = 0; r < kBoardSize; r++) {
-      for (var c = 0; c < kBoardSize; c++) {
-        final value = board.cellAt(r, c).value;
-        if (value != 0) counts[value] = counts[value]! - 1;
-      }
+    // A solved board holds each digit exactly once per box - true even on
+    // Samurai, where a shared box's single physical cell simultaneously
+    // satisfies both grids it belongs to - so the number of box units
+    // (already deduplicated by PuzzleShape for a shared box) is exactly
+    // how many cells will hold each digit once everything's filled in: 9
+    // for a classic board, 41 for Samurai (5 grids' 9 boxes each, minus
+    // the 4 that are shared and so counted only once).
+    final target = board.shape.units.where((u) => u.kind == UnitKind.box).length;
+    final counts = <int, int>{for (var v = 1; v <= 9; v++) v: target};
+    for (final (r, c) in board.shape.activeCells) {
+      final value = board.cellAt(r, c).value;
+      if (value != 0) counts[value] = counts[value]! - 1;
     }
     return counts;
   }
@@ -294,6 +304,66 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
           TextButton(onPressed: _leaveToMenu, child: Text(l10n.backToMenu)),
         ],
       ),
+    );
+  }
+}
+
+/// Renders [SudokuBoardWidget], wrapped in a pinch-zoom/pan
+/// [InteractiveViewer] for Samurai - whose 21x21 cross has far more detail
+/// than fits legibly on a phone screen at once - and left unwrapped for the
+/// classic board, which already fits comfortably.
+class _Board extends StatelessWidget {
+  final BoardLayout layout;
+  final Board board;
+  final Board? solution;
+  final int? selectedRow;
+  final int? selectedCol;
+  final bool highlightEnabled;
+  final HighlightColor highlightColor;
+  final bool showErrors;
+  final HintUnitType? hintFocusUnit;
+  final void Function(int row, int col) onCellTap;
+
+  const _Board({
+    required this.layout,
+    required this.board,
+    required this.solution,
+    required this.selectedRow,
+    required this.selectedCol,
+    required this.highlightEnabled,
+    required this.highlightColor,
+    required this.showErrors,
+    required this.hintFocusUnit,
+    required this.onCellTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isClassic = layout == BoardLayout.classic;
+    final boardWidget = SudokuBoardWidget(
+      board: board,
+      solution: solution,
+      selectedRow: selectedRow,
+      selectedCol: selectedCol,
+      highlightEnabled: highlightEnabled,
+      highlightColor: highlightColor,
+      showErrors: showErrors,
+      hintFocusUnit: hintFocusUnit,
+      // A bit smaller than the largest size that would still fit each of
+      // Samurai's much denser cells, so digits and notes read a little
+      // airier there instead of always filling every available pixel.
+      // Notes get their own, smaller factor - they're already tiny (a 3x3
+      // sub-grid within the cell), so the same factor as entered values
+      // still reads cramped. Classic keeps its usual size unchanged.
+      fontScale: isClassic ? 1 : 0.75,
+      noteFontScale: isClassic ? 1 : 0.6,
+      onCellTap: onCellTap,
+    );
+    if (isClassic) return boardWidget;
+    return InteractiveViewer(
+      minScale: 1,
+      maxScale: 4,
+      child: boardWidget,
     );
   }
 }

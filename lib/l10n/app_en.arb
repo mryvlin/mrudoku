@@ -54,6 +54,9 @@
   "difficultyHard": "Hard",
   "difficultyExpert": "Expert",
 
+  "boardLayoutClassic": "Classic",
+  "boardLayoutSamurai": "Samurai",
+
   "undoLabel": "Undo",
   "redoLabel": "Redo",
   "notesLabel": "Notes",

@@ -2,16 +2,18 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/board_layout.dart';
 import '../models/difficulty.dart';
 import '../models/leaderboard_entry.dart';
 
 /// Persists completed-game times locally via `shared_preferences`, grouped
-/// and ranked by [Difficulty].
+/// and ranked by (difficulty, board layout) - a Samurai time never crowds
+/// out a classic one at the same difficulty, or vice versa.
 class LeaderboardService {
   static const _key = 'mrsudoku.leaderboard';
 
-  /// Fastest entries kept per difficulty, so the saved list can't grow
-  /// without bound.
+  /// Fastest entries kept per (difficulty, layout) group, so the saved list
+  /// can't grow without bound.
   static const maxEntriesPerDifficulty = 10;
 
   const LeaderboardService();
@@ -32,14 +34,14 @@ class LeaderboardService {
   /// trims it to [maxEntriesPerDifficulty]. Returns the full updated list.
   Future<List<LeaderboardEntry>> addEntry(LeaderboardEntry entry) async {
     final current = await load();
-    final byDifficulty = <Difficulty, List<LeaderboardEntry>>{};
+    final byGroup = <(Difficulty, BoardLayout), List<LeaderboardEntry>>{};
     for (final e in current) {
-      byDifficulty.putIfAbsent(e.difficulty, () => []).add(e);
+      byGroup.putIfAbsent((e.difficulty, e.layout), () => []).add(e);
     }
-    byDifficulty.putIfAbsent(entry.difficulty, () => []).add(entry);
+    byGroup.putIfAbsent((entry.difficulty, entry.layout), () => []).add(entry);
 
     final result = <LeaderboardEntry>[];
-    for (final entries in byDifficulty.values) {
+    for (final entries in byGroup.values) {
       entries.sort((a, b) => a.elapsedSeconds.compareTo(b.elapsedSeconds));
       result.addAll(entries.take(maxEntriesPerDifficulty));
     }

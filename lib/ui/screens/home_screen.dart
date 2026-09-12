@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../logic/providers.dart';
+import '../../models/board_layout.dart';
 import '../../models/difficulty.dart';
 import '../../models/game_state.dart';
 import '../../models/settings.dart';
+import '../board_layout_labels.dart';
 import '../difficulty_labels.dart';
 import '../format_duration.dart';
 import '../widgets/leaderboard_widget.dart';
@@ -27,6 +29,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // difficulty before the first finishes generating) can't push two
   // GameScreen routes or race two concurrent generations.
   bool _navigating = false;
+
+  /// Which layout the difficulty buttons below start a new game on. Purely
+  /// local UI state - the choice made here is passed straight through to
+  /// [GameController.startNewGame] and doesn't need to persist across app
+  /// launches.
+  BoardLayout _selectedLayout = BoardLayout.classic;
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +90,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   Text(l10n.newGame, style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 12),
+                  SegmentedButton<BoardLayout>(
+                    segments: [
+                      for (final layout in BoardLayout.values)
+                        ButtonSegment(value: layout, label: Text(layout.label(l10n))),
+                    ],
+                    selected: {_selectedLayout},
+                    onSelectionChanged: _navigating
+                        ? null
+                        : (selection) => setState(() => _selectedLayout = selection.first),
+                  ),
+                  const SizedBox(height: 12),
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
@@ -130,6 +149,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final pushed = navigator.push(MaterialPageRoute(builder: (_) => const GameScreen()));
     await ref.read(gameControllerProvider.notifier).startNewGame(
           difficulty,
+          layout: _selectedLayout,
           maxMistakes: settings.maxMistakes,
           errorLimitEnabled: settings.errorLimitEnabled,
           maxHints: settings.maxHints,

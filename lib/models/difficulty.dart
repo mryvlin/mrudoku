@@ -1,10 +1,12 @@
+import 'board_layout.dart';
+
 /// Available difficulty levels for a new game.
 enum Difficulty { easy, medium, hard, expert }
 
 extension DifficultyX on Difficulty {
-  /// Number of given (pre-filled) cells the generator aims to keep. Lower
-  /// clue counts require harder solving techniques and more backtracking
-  /// during generation.
+  /// Number of given (pre-filled) cells the generator aims to keep on a
+  /// classic 9x9 board. Lower clue counts require harder solving techniques
+  /// and more backtracking during generation.
   int get clueCount {
     switch (this) {
       case Difficulty.easy:
@@ -15,6 +17,31 @@ extension DifficultyX on Difficulty {
         return 28;
       case Difficulty.expert:
         return 24;
+    }
+  }
+
+  /// Number of given cells the generator aims to keep, for [layout].
+  /// Tuned empirically against `Solver`'s minimum-remaining-values search:
+  /// below roughly 110-115 clues, Samurai's hole-digging cost still spikes
+  /// non-linearly (seen up to ~90s on some seeds even after that search
+  /// upgrade), so these stay a comfortable margin above that cliff while
+  /// still landing on the hardest allowed technique a large fraction of the
+  /// time once `Generator` retries for the hardest attempt within the cap.
+  int clueCountFor(BoardLayout layout) {
+    switch (layout) {
+      case BoardLayout.classic:
+        return clueCount;
+      case BoardLayout.samurai:
+        switch (this) {
+          case Difficulty.easy:
+            return 190;
+          case Difficulty.medium:
+            return 155;
+          case Difficulty.hard:
+            return 130;
+          case Difficulty.expert:
+            return 122;
+        }
     }
   }
 
