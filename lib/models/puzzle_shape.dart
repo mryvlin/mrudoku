@@ -56,13 +56,22 @@ class PuzzleShape {
   /// without recomputing unit intersections on every hint lookup.
   final List<(Unit, Unit)> linkedUnitPairs;
 
+  /// Every other cell sharing at least one unit with a given cell - i.e.
+  /// every cell placing a value there could rule out - precomputed once per
+  /// shape instead of re-walking `unitsByCell` for the same cell on every
+  /// solver call. 3-8 cells for an ordinary cell (row + column + box, minus
+  /// double-counted overlaps); more at a Samurai/Gattai-8/Sohei shared-box
+  /// cell, which has extra row/column units too.
+  final Map<(int, int), List<(int, int)>> peersByCell;
+
   PuzzleShape._({
     required this.height,
     required this.width,
     required this.activeCells,
     required this.units,
   })  : unitsByCell = _buildUnitsByCell(units),
-        linkedUnitPairs = _buildLinkedUnitPairs(units);
+        linkedUnitPairs = _buildLinkedUnitPairs(units),
+        peersByCell = _buildPeersByCell(units);
 
   static Map<(int, int), List<Unit>> _buildUnitsByCell(List<Unit> units) {
     final map = <(int, int), List<Unit>>{};
@@ -72,6 +81,19 @@ class PuzzleShape {
       }
     }
     return map;
+  }
+
+  static Map<(int, int), List<(int, int)>> _buildPeersByCell(List<Unit> units) {
+    final peerSets = <(int, int), Set<(int, int)>>{};
+    for (final unit in units) {
+      for (final cell in unit.cells) {
+        final peers = peerSets.putIfAbsent(cell, () => {});
+        for (final other in unit.cells) {
+          if (other != cell) peers.add(other);
+        }
+      }
+    }
+    return {for (final entry in peerSets.entries) entry.key: entry.value.toList()};
   }
 
   static List<(Unit, Unit)> _buildLinkedUnitPairs(List<Unit> units) {
