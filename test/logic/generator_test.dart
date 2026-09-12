@@ -34,7 +34,7 @@ void main() {
     // Regression test for a bug where the generator accepted the first dug
     // layout whose rank met-or-exceeded the difficulty's cap instead of
     // retrying when it exceeded it, so e.g. Hard puzzles could come out
-    // needing backtracking (rank 6) despite a documented cap of 2. Sample
+    // needing backtracking (the highest rank) despite a documented cap of 2. Sample
     // several seeds per non-easy difficulty since any single seed might
     // land within range by chance even with the bug present.
     for (final difficulty in [Difficulty.medium, Difficulty.hard, Difficulty.expert]) {

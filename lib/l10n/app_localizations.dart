@@ -446,6 +446,18 @@ abstract class AppLocalizations {
   /// **'Nach Ausschluss durch ein X-Wing-Muster:'**
   String get leadInXWing;
 
+  /// Lead-in sentence prepended to the base hint explanation.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach Ausschluss durch ein XY-Wing-Muster:'**
+  String get leadInXYWing;
+
+  /// Lead-in sentence prepended to the base hint explanation.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach Ausschluss durch ein Swordfish-Muster:'**
+  String get leadInSwordfish;
+
   /// Solving technique name shown before the hint explanation.
   ///
   /// In de, this message translates to:
@@ -481,6 +493,18 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'X-Wing'**
   String get techniqueXWing;
+
+  /// Solving technique name shown before the hint explanation.
+  ///
+  /// In de, this message translates to:
+  /// **'XY-Wing'**
+  String get techniqueXYWing;
+
+  /// Solving technique name shown before the hint explanation.
+  ///
+  /// In de, this message translates to:
+  /// **'Swordfish'**
+  String get techniqueSwordfish;
 
   /// Solving technique name for the direct-reveal fallback hint.
   ///

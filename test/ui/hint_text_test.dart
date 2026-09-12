@@ -64,6 +64,24 @@ void main() {
     expect(message, contains('Zeile 1, Spalte 1 hat nur einen möglichen Kandidaten: 1.'));
   });
 
+  test('an XY-Wing step prepends its lead-in before the base explanation', () {
+    const step = HintStep(row: 0, col: 0, value: 1, technique: SolvingTechnique.xyWing);
+
+    final message = describeHint(step, de);
+    expect(message, startsWith('XY-Wing'));
+    expect(message, contains('Nach Ausschluss durch ein XY-Wing-Muster'));
+    expect(message, contains('Zeile 1, Spalte 1 hat nur einen möglichen Kandidaten: 1.'));
+  });
+
+  test('a Swordfish step prepends its lead-in before the base explanation', () {
+    const step = HintStep(row: 0, col: 0, value: 1, technique: SolvingTechnique.swordfish);
+
+    final message = describeHint(step, de);
+    expect(message, startsWith('Swordfish'));
+    expect(message, contains('Nach Ausschluss durch ein Swordfish-Muster'));
+    expect(message, contains('Zeile 1, Spalte 1 hat nur einen möglichen Kandidaten: 1.'));
+  });
+
   test('the backtracking fallback ignores row/col/value and just reveals directly', () {
     const step = HintStep(row: 0, col: 0, value: 9, technique: SolvingTechnique.backtracking);
 

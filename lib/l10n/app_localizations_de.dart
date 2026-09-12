@@ -205,6 +205,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get leadInXWing => 'Nach Ausschluss durch ein X-Wing-Muster:';
 
   @override
+  String get leadInXYWing => 'Nach Ausschluss durch ein XY-Wing-Muster:';
+
+  @override
+  String get leadInSwordfish => 'Nach Ausschluss durch ein Swordfish-Muster:';
+
+  @override
   String get techniqueNakedSingle => 'Naked Single';
 
   @override
@@ -222,6 +228,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get techniqueXWing => 'X-Wing';
+
+  @override
+  String get techniqueXYWing => 'XY-Wing';
+
+  @override
+  String get techniqueSwordfish => 'Swordfish';
 
   @override
   String get techniqueBacktracking => 'Rückwärtssuche (Ausprobieren)';

@@ -42,6 +42,10 @@ String? _leadIn(SolvingTechnique technique, AppLocalizations l10n) {
       return l10n.leadInNakedTriple;
     case SolvingTechnique.xWing:
       return l10n.leadInXWing;
+    case SolvingTechnique.xyWing:
+      return l10n.leadInXYWing;
+    case SolvingTechnique.swordfish:
+      return l10n.leadInSwordfish;
     case SolvingTechnique.nakedSingle:
     case SolvingTechnique.hiddenSingle:
     case SolvingTechnique.backtracking:
@@ -63,6 +67,10 @@ String _techniqueLabel(SolvingTechnique technique, AppLocalizations l10n) {
       return l10n.techniqueNakedTriple;
     case SolvingTechnique.xWing:
       return l10n.techniqueXWing;
+    case SolvingTechnique.xyWing:
+      return l10n.techniqueXYWing;
+    case SolvingTechnique.swordfish:
+      return l10n.techniqueSwordfish;
     case SolvingTechnique.backtracking:
       return l10n.techniqueBacktracking;
   }

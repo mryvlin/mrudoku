@@ -35,7 +35,7 @@ extension DifficultyX on Difficulty {
       case Difficulty.hard:
         return 2; // up to naked/pointing pair or box-line reduction
       case Difficulty.expert:
-        return 6; // hidden pair, naked triple, X-Wing and beyond, or backtracking
+        return 8; // hidden pair, naked triple, X-Wing, XY-Wing, Swordfish and beyond, or backtracking
     }
   }
 }

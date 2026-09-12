@@ -73,6 +73,8 @@
   "leadInHiddenPair": "After elimination via a hidden pair:",
   "leadInNakedTriple": "After elimination via a candidate triple:",
   "leadInXWing": "After elimination via an X-Wing pattern:",
+  "leadInXYWing": "After elimination via an XY-Wing pattern:",
+  "leadInSwordfish": "After elimination via a Swordfish pattern:",
 
   "techniqueNakedSingle": "Naked Single",
   "techniqueHiddenSingle": "Hidden Single",
@@ -80,6 +82,8 @@
   "techniqueHiddenPair": "Hidden pair",
   "techniqueNakedTriple": "Naked triple",
   "techniqueXWing": "X-Wing",
+  "techniqueXYWing": "XY-Wing",
+  "techniqueSwordfish": "Swordfish",
   "techniqueBacktracking": "Backtracking (trial and error)",
 
   "hintDirectReveal": "No simple logical rule applies here - the solution for this cell is revealed directly."

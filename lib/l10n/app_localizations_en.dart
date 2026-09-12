@@ -204,6 +204,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get leadInXWing => 'After elimination via an X-Wing pattern:';
 
   @override
+  String get leadInXYWing => 'After elimination via an XY-Wing pattern:';
+
+  @override
+  String get leadInSwordfish => 'After elimination via a Swordfish pattern:';
+
+  @override
   String get techniqueNakedSingle => 'Naked Single';
 
   @override
@@ -221,6 +227,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get techniqueXWing => 'X-Wing';
+
+  @override
+  String get techniqueXYWing => 'XY-Wing';
+
+  @override
+  String get techniqueSwordfish => 'Swordfish';
 
   @override
   String get techniqueBacktracking => 'Backtracking (trial and error)';

@@ -164,5 +164,51 @@ void main() {
       expect(step.value, 1);
       expect(step.technique, SolvingTechnique.xWing);
     });
+
+    test('finds an XY-Wing step', () {
+      final values = [
+        [9, 0, 6, 7, 4, 5, 0, 0, 0],
+        [0, 0, 3, 0, 8, 0, 7, 4, 6],
+        [0, 4, 7, 0, 0, 3, 9, 5, 0],
+        [0, 0, 0, 4, 3, 1, 6, 9, 0],
+        [0, 0, 1, 2, 0, 0, 5, 0, 0],
+        [0, 0, 9, 5, 0, 8, 0, 0, 0],
+        [3, 0, 2, 0, 0, 0, 0, 0, 7],
+        [6, 9, 0, 3, 1, 7, 0, 0, 5],
+        [0, 0, 0, 0, 0, 0, 3, 0, 9],
+      ];
+      final board = Board.fromValues(values);
+
+      final step = HintEngine.nextLogicalStep(board);
+
+      expect(step, isNotNull);
+      expect(step!.row, 5);
+      expect(step.col, 4);
+      expect(step.value, 7);
+      expect(step.technique, SolvingTechnique.xyWing);
+    });
+
+    test('finds a Swordfish step', () {
+      final values = [
+        [5, 0, 0, 1, 0, 0, 2, 0, 4],
+        [3, 0, 9, 5, 4, 0, 0, 7, 1],
+        [0, 4, 0, 0, 0, 0, 5, 0, 0],
+        [6, 5, 8, 2, 9, 1, 7, 4, 3],
+        [2, 7, 4, 6, 3, 8, 9, 1, 5],
+        [9, 1, 3, 7, 5, 4, 0, 0, 2],
+        [0, 0, 0, 4, 0, 7, 3, 5, 0],
+        [7, 0, 0, 0, 0, 5, 4, 2, 0],
+        [4, 0, 5, 9, 2, 0, 1, 0, 7],
+      ];
+      final board = Board.fromValues(values);
+
+      final step = HintEngine.nextLogicalStep(board);
+
+      expect(step, isNotNull);
+      expect(step!.row, 0);
+      expect(step.col, 1);
+      expect(step.value, 6);
+      expect(step.technique, SolvingTechnique.swordfish);
+    });
   });
 }

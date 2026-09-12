@@ -191,6 +191,10 @@
   "@leadInNakedTriple": {"description": "Lead-in sentence prepended to the base hint explanation."},
   "leadInXWing": "Nach Ausschluss durch ein X-Wing-Muster:",
   "@leadInXWing": {"description": "Lead-in sentence prepended to the base hint explanation."},
+  "leadInXYWing": "Nach Ausschluss durch ein XY-Wing-Muster:",
+  "@leadInXYWing": {"description": "Lead-in sentence prepended to the base hint explanation."},
+  "leadInSwordfish": "Nach Ausschluss durch ein Swordfish-Muster:",
+  "@leadInSwordfish": {"description": "Lead-in sentence prepended to the base hint explanation."},
 
   "techniqueNakedSingle": "Naked Single",
   "@techniqueNakedSingle": {"description": "Solving technique name shown before the hint explanation."},
@@ -204,6 +208,10 @@
   "@techniqueNakedTriple": {"description": "Solving technique name shown before the hint explanation."},
   "techniqueXWing": "X-Wing",
   "@techniqueXWing": {"description": "Solving technique name shown before the hint explanation."},
+  "techniqueXYWing": "XY-Wing",
+  "@techniqueXYWing": {"description": "Solving technique name shown before the hint explanation."},
+  "techniqueSwordfish": "Swordfish",
+  "@techniqueSwordfish": {"description": "Solving technique name shown before the hint explanation."},
   "techniqueBacktracking": "Rückwärtssuche (Ausprobieren)",
   "@techniqueBacktracking": {"description": "Solving technique name for the direct-reveal fallback hint."},
 

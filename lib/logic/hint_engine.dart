@@ -12,6 +12,8 @@ enum SolvingTechnique {
   hiddenPair,
   nakedTriple,
   xWing,
+  xyWing,
+  swordfish,
   backtracking,
 }
 
@@ -73,6 +75,8 @@ class HintEngine {
     SolvingTechnique.hiddenPair,
     SolvingTechnique.nakedTriple,
     SolvingTechnique.xWing,
+    SolvingTechnique.xyWing,
+    SolvingTechnique.swordfish,
   ];
 
   /// Finds the next cell whose value follows from pure logic, trying
@@ -97,6 +101,8 @@ class HintEngine {
         SolvingTechnique.hiddenPair => _applyHiddenPairs(board, cands, units),
         SolvingTechnique.nakedTriple => _applyNakedTriples(board, cands, units),
         SolvingTechnique.xWing => _applyXWing(board, cands),
+        SolvingTechnique.xyWing => _applyXYWing(board, cands),
+        SolvingTechnique.swordfish => _applySwordfish(board, cands),
         _ => false,
       };
       if (!changed) continue;
@@ -421,6 +427,123 @@ class HintEngine {
       }
     }
     return changed;
+  }
+
+  /// XY-Wing: a bi-value "pivot" cell with candidates {a, b} sees two other
+  /// bi-value "pincer" cells {a, c} and {b, c} (c shared, distinct from a and
+  /// b). Whichever pincer doesn't match the pivot's actual value still forces
+  /// c into the other pincer, so c can be removed from every cell that sees
+  /// both pincers (the pivot itself never holds c, so it's left alone).
+  static bool _applyXYWing(Board board, List<List<Set<int>>> cands) {
+    var changed = false;
+    final biValueCells = [
+      for (var r = 0; r < kBoardSize; r++)
+        for (var c = 0; c < kBoardSize; c++)
+          if (board.cellAt(r, c).isEmpty && cands[r][c].length == 2) [r, c],
+    ];
+
+    for (final pivot in biValueCells) {
+      // biValueCells is a snapshot taken before this loop started, but the
+      // eliminations below mutate `cands` in place as we go - a cell that
+      // was bi-value at snapshot time may have since dropped to one (or
+      // zero) candidates, so its live state must be re-checked before use.
+      if (cands[pivot[0]][pivot[1]].length != 2) continue;
+      final pivotCands = cands[pivot[0]][pivot[1]].toList();
+      final a = pivotCands[0], b = pivotCands[1];
+      final peers = biValueCells.where((p) => _sees(pivot, p)).toList();
+
+      for (final x in peers) {
+        final xc = cands[x[0]][x[1]];
+        if (xc.length != 2 || !xc.contains(a) || xc.contains(b)) continue;
+        final c = xc.firstWhere((v) => v != a);
+
+        for (final y in peers) {
+          if (y[0] == x[0] && y[1] == x[1]) continue;
+          final yc = cands[y[0]][y[1]];
+          if (yc.length != 2 || !yc.contains(b) || yc.contains(a) || !yc.contains(c)) continue;
+
+          for (var r = 0; r < kBoardSize; r++) {
+            for (var col = 0; col < kBoardSize; col++) {
+              if ((r == x[0] && col == x[1]) || (r == y[0] && col == y[1])) continue;
+              if (!board.cellAt(r, col).isEmpty) continue;
+              if (_sees(x, [r, col]) && _sees(y, [r, col]) && cands[r][col].remove(c)) {
+                changed = true;
+              }
+            }
+          }
+        }
+      }
+    }
+    return changed;
+  }
+
+  /// Swordfish: the X-Wing pattern generalized to three rows (or columns) -
+  /// if a value's candidates across three rows are confined to the same
+  /// three columns overall, that value can be removed from the rest of
+  /// those columns (and symmetrically for three columns confined to three
+  /// rows).
+  static bool _applySwordfish(Board board, List<List<Set<int>>> cands) {
+    var changed = false;
+    for (var value = 1; value <= kBoardSize; value++) {
+      final rowCols = <int, List<int>>{};
+      for (var r = 0; r < kBoardSize; r++) {
+        final cols = [
+          for (var c = 0; c < kBoardSize; c++)
+            if (board.cellAt(r, c).isEmpty && cands[r][c].contains(value)) c,
+        ];
+        if (cols.length == 2 || cols.length == 3) rowCols[r] = cols;
+      }
+      final candidateRows = rowCols.keys.toList();
+      for (var i = 0; i < candidateRows.length; i++) {
+        for (var j = i + 1; j < candidateRows.length; j++) {
+          for (var k = j + 1; k < candidateRows.length; k++) {
+            final r1 = candidateRows[i], r2 = candidateRows[j], r3 = candidateRows[k];
+            final union = <int>{...rowCols[r1]!, ...rowCols[r2]!, ...rowCols[r3]!};
+            if (union.length != 3) continue;
+            for (var r = 0; r < kBoardSize; r++) {
+              if (r == r1 || r == r2 || r == r3) continue;
+              for (final c in union) {
+                if (board.cellAt(r, c).isEmpty && cands[r][c].remove(value)) changed = true;
+              }
+            }
+          }
+        }
+      }
+
+      final colRows = <int, List<int>>{};
+      for (var c = 0; c < kBoardSize; c++) {
+        final rows = [
+          for (var r = 0; r < kBoardSize; r++)
+            if (board.cellAt(r, c).isEmpty && cands[r][c].contains(value)) r,
+        ];
+        if (rows.length == 2 || rows.length == 3) colRows[c] = rows;
+      }
+      final candidateCols = colRows.keys.toList();
+      for (var i = 0; i < candidateCols.length; i++) {
+        for (var j = i + 1; j < candidateCols.length; j++) {
+          for (var k = j + 1; k < candidateCols.length; k++) {
+            final c1 = candidateCols[i], c2 = candidateCols[j], c3 = candidateCols[k];
+            final union = <int>{...colRows[c1]!, ...colRows[c2]!, ...colRows[c3]!};
+            if (union.length != 3) continue;
+            for (var c = 0; c < kBoardSize; c++) {
+              if (c == c1 || c == c2 || c == c3) continue;
+              for (final r in union) {
+                if (board.cellAt(r, c).isEmpty && cands[r][c].remove(value)) changed = true;
+              }
+            }
+          }
+        }
+      }
+    }
+    return changed;
+  }
+
+  /// Whether two distinct cells share a row, column or box (i.e. placing a
+  /// value in one rules it out in the other).
+  static bool _sees(List<int> a, List<int> b) {
+    if (a[0] == b[0] && a[1] == b[1]) return false;
+    if (a[0] == b[0] || a[1] == b[1]) return true;
+    return boxOrigin(a[0], a[1]) == boxOrigin(b[0], b[1]);
   }
 
   static bool _samePositions(List<List<int>> a, List<List<int>> b) {
