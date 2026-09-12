@@ -35,13 +35,32 @@ class Solver {
     return true;
   }
 
-  /// First empty active cell (shape-defined iteration order), or `null` if
-  /// every active cell is filled.
-  static List<int>? _firstEmpty(Grid grid, PuzzleShape shape) {
+  /// The empty active cell with the fewest legal candidates left (the
+  /// standard "minimum remaining values" heuristic), or `null` if every
+  /// active cell is filled. A cell already down to zero candidates is
+  /// returned immediately - the caller fails out of that branch right away
+  /// instead of discovering the dead end many cells later - and a cell down
+  /// to exactly one is a forced move, found and filled before any guessing
+  /// happens. Both cut the search tree far more than picking cells in a
+  /// fixed order ever could, which is what made hole-digging blow up on a
+  /// sparse board (see `Generator`) before this existed.
+  static List<int>? _mostConstrainedEmpty(Grid grid, PuzzleShape shape) {
+    List<int>? best;
+    var bestCount = kBoardSize + 1;
     for (final (r, c) in shape.activeCells) {
-      if (grid[r][c] == 0) return [r, c];
+      if (grid[r][c] != 0) continue;
+      var count = 0;
+      for (var value = 1; value <= kBoardSize; value++) {
+        if (_isSafe(grid, shape, r, c, value)) count++;
+      }
+      if (count == 0) return [r, c];
+      if (count < bestCount) {
+        bestCount = count;
+        best = [r, c];
+        if (bestCount == 1) break;
+      }
     }
-    return null;
+    return best;
   }
 
   /// Fills [grid] in place via backtracking, trying candidate values in
@@ -49,7 +68,7 @@ class Solver {
   /// board from an empty grid. Returns `true` on success.
   static bool fillRandomized(Grid grid, Random random, [PuzzleShape? shape]) {
     final s = shape ?? PuzzleShape.classic;
-    final pos = _firstEmpty(grid, s);
+    final pos = _mostConstrainedEmpty(grid, s);
     if (pos == null) return true;
     final row = pos[0], col = pos[1];
     final values = List.generate(kBoardSize, (i) => i + 1)..shuffle(random);
@@ -72,7 +91,7 @@ class Solver {
   }
 
   static bool _solveInPlace(Grid grid, PuzzleShape shape) {
-    final pos = _firstEmpty(grid, shape);
+    final pos = _mostConstrainedEmpty(grid, shape);
     if (pos == null) return true;
     final row = pos[0], col = pos[1];
     for (var value = 1; value <= kBoardSize; value++) {
@@ -94,7 +113,7 @@ class Solver {
     var count = 0;
 
     bool search() {
-      final pos = _firstEmpty(working, s);
+      final pos = _mostConstrainedEmpty(working, s);
       if (pos == null) {
         count++;
         return count >= limit;

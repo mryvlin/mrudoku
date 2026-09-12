@@ -20,12 +20,13 @@ extension DifficultyX on Difficulty {
     }
   }
 
-  /// Number of given cells the generator aims to keep, for [layout]. A
-  /// Samurai board (369 active cells across its 5 overlapping grids) needs
-  /// proportionally far more givens than [clueCount]'s classic numbers
-  /// scaled up would suggest, to stay solvable/generatable in reasonable
-  /// time - the interlocking shared boxes make low clue counts much more
-  /// expensive to dig holes into than an equivalent-ratio classic board.
+  /// Number of given cells the generator aims to keep, for [layout].
+  /// Tuned empirically against `Solver`'s minimum-remaining-values search:
+  /// below roughly 110-115 clues, Samurai's hole-digging cost still spikes
+  /// non-linearly (seen up to ~90s on some seeds even after that search
+  /// upgrade), so these stay a comfortable margin above that cliff while
+  /// still landing on the hardest allowed technique a large fraction of the
+  /// time once `Generator` retries for the hardest attempt within the cap.
   int clueCountFor(BoardLayout layout) {
     switch (layout) {
       case BoardLayout.classic:
@@ -33,13 +34,13 @@ extension DifficultyX on Difficulty {
       case BoardLayout.samurai:
         switch (this) {
           case Difficulty.easy:
-            return 220;
-          case Difficulty.medium:
             return 190;
+          case Difficulty.medium:
+            return 155;
           case Difficulty.hard:
-            return 160;
+            return 130;
           case Difficulty.expert:
-            return 140;
+            return 122;
         }
     }
   }

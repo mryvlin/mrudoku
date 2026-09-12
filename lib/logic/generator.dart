@@ -41,16 +41,14 @@ class Generator {
     final solutionBoard = Board.fromValues(solutionGrid, shape: shape);
 
     // 2. Dig holes (remove cells) while preserving a unique solution, aiming
-    //    for the difficulty's target clue count. If the result turns out
-    //    logically *harder* than the difficulty allows - a real risk at low
-    //    clue counts, where a random hole layout can easily force advanced
-    //    techniques or outright backtracking - retry with a different
-    //    removal order; a handful of attempts is enough in practice. Among
-    //    attempts that never land within the allowed range, keep the
-    //    least-too-hard one rather than whichever was dug last, so a
-    //    maxAttempts-exhausted fallback is still as close to correct as
-    //    possible instead of essentially random.
-    const maxAttempts = 5;
+    //    for the difficulty's target clue count, then keep the *hardest*
+    //    attempt that's still within the difficulty's allowed technique
+    //    range - a random removal order can easily land on an easy layout
+    //    even at a clue count that could support a much harder one, so
+    //    stopping at the first attempt within range (as this used to)
+    //    under-sells what the clue count could deliver. Falls back to the
+    //    least-too-hard attempt only if none ever land within range.
+    const maxAttempts = 8;
     Board bestPuzzle = Board.fromValues(solutionGrid, shape: shape);
     var bestRank = -1;
     for (var attempt = 0; attempt < maxAttempts; attempt++) {
@@ -60,14 +58,25 @@ class Generator {
         break; // clue count alone suffices
       }
       final rank = HintEngine.rateDifficulty(puzzle).rank;
-      if (attempt == 0 || rank < bestRank) {
+      if (attempt == 0 || _isBetterAttempt(rank, bestRank, difficulty.maxAllowedTechniqueRank)) {
         bestPuzzle = puzzle;
         bestRank = rank;
       }
-      if (rank <= difficulty.maxAllowedTechniqueRank) break; // within the allowed range
+      if (bestRank == difficulty.maxAllowedTechniqueRank) break; // can't beat the cap itself
     }
 
     return GeneratedPuzzle(puzzle: bestPuzzle, solution: solutionBoard, difficulty: difficulty);
+  }
+
+  /// Whether [rank] should replace [currentBestRank] as the best puzzle
+  /// found so far: any attempt within [cap] beats any attempt over it: and
+  /// among attempts on the same side of the cap, prefer the harder one
+  /// within it, or the least-too-hard one over it.
+  static bool _isBetterAttempt(int rank, int currentBestRank, int cap) {
+    final withinCap = rank <= cap;
+    final currentWithinCap = currentBestRank <= cap;
+    if (withinCap != currentWithinCap) return withinCap;
+    return withinCap ? rank > currentBestRank : rank < currentBestRank;
   }
 
   static Board _digHoles(
