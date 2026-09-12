@@ -25,7 +25,7 @@ void main() {
     );
     await tester.pump();
 
-    final difficultyButton = find.byType(OutlinedButton).first;
+    final difficultyButton = find.byKey(const ValueKey('difficulty-easy'));
 
     // startNewGame -> PuzzleGenerationService.generate uses compute(), which
     // spawns a real isolate, so this needs runAsync (see

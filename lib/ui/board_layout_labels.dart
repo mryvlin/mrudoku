@@ -11,6 +11,12 @@ extension BoardLayoutLabelX on BoardLayout {
         return l10n.boardLayoutClassic;
       case BoardLayout.samurai:
         return l10n.boardLayoutSamurai;
+      case BoardLayout.twin:
+        return l10n.boardLayoutTwin;
+      case BoardLayout.gattai8:
+        return l10n.boardLayoutGattai8;
+      case BoardLayout.sohei:
+        return l10n.boardLayoutSohei;
     }
   }
 }

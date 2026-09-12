@@ -42,6 +42,48 @@ extension DifficultyX on Difficulty {
           case Difficulty.expert:
             return 122;
         }
+      case BoardLayout.twin:
+        // Twin's 153 active cells generate fast even at low clue counts (no
+        // cliff found down to 40 in testing), so these track classic's
+        // clue/cell ratio closely rather than needing Samurai's safety
+        // margin above a timing cliff.
+        switch (this) {
+          case Difficulty.easy:
+            return 80;
+          case Difficulty.medium:
+            return 64;
+          case Difficulty.hard:
+            return 53;
+          case Difficulty.expert:
+            return 46;
+        }
+      case BoardLayout.gattai8:
+        // 576 active cells - bigger than Samurai's, so its own cliff sits
+        // higher too (found starting around 171 in testing); these stay a
+        // margin above it.
+        switch (this) {
+          case Difficulty.easy:
+            return 300;
+          case Difficulty.medium:
+            return 242;
+          case Difficulty.hard:
+            return 199;
+          case Difficulty.expert:
+            return 178;
+        }
+      case BoardLayout.sohei:
+        // 288 active cells; its cliff starts somewhere below 85 in testing
+        // (a run at 75 didn't finish), so these stay above that.
+        switch (this) {
+          case Difficulty.easy:
+            return 150;
+          case Difficulty.medium:
+            return 121;
+          case Difficulty.hard:
+            return 100;
+          case Difficulty.expert:
+            return 85;
+        }
     }
   }
 

@@ -35,19 +35,6 @@ class SudokuCellWidget extends StatelessWidget {
   /// so it can be tuned independently of the app's overall theme.
   final Color highlightColor;
 
-  /// Multiplier applied to the entered-value font size, on top of whatever
-  /// `FittedBox` already shrinks to fit the cell - lets a much denser board
-  /// (Samurai) read a bit smaller/airier than the largest size that would
-  /// still technically fit, rather than always rendering at that maximum.
-  /// `1` (the default) reproduces today's classic sizing exactly.
-  final double fontScale;
-
-  /// Same idea as [fontScale], but for pencil-mark notes specifically -
-  /// independent so notes can shrink by a different amount than entered
-  /// values (they're already smaller and in a tighter 3x3 sub-grid, so
-  /// Samurai typically wants a smaller factor here than for values).
-  final double noteFontScale;
-
   const SudokuCellWidget({
     super.key,
     required this.cell,
@@ -62,8 +49,6 @@ class SudokuCellWidget extends StatelessWidget {
     required this.onTap,
     required this.highlightColor,
     this.highlightedValue = 0,
-    this.fontScale = 1,
-    this.noteFontScale = 1,
   });
 
   @override
@@ -105,12 +90,26 @@ class SudokuCellWidget extends StatelessWidget {
           ),
         ),
         alignment: Alignment.center,
-        child: cell.isEmpty ? _buildNotes(theme) : _buildValue(theme, isSameValueHighlighted || isSelected),
+        // Sizes text off the cell's own measured size rather than a fixed
+        // theme size scaled by a hand-picked per-layout factor, so every
+        // layout's cells - whatever their actual pixel size turns out to be
+        // - keep the same text-to-cell proportions automatically, with no
+        // per-shape tuning. FittedBox (below) stays as a cheap safety net
+        // for edge cases (e.g. font metrics overshooting the estimate), not
+        // as the primary sizing mechanism anymore.
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final cellSize = constraints.biggest.shortestSide;
+            return cell.isEmpty
+                ? _buildNotes(theme, cellSize)
+                : _buildValue(theme, isSameValueHighlighted || isSelected, cellSize);
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildValue(ThemeData theme, bool isHighlighted) {
+  Widget _buildValue(ThemeData theme, bool isHighlighted, double cellSize) {
     final color = isError
         ? theme.colorScheme.error
         : isHighlighted
@@ -118,31 +117,25 @@ class SudokuCellWidget extends StatelessWidget {
             : cell.isGiven
                 ? theme.colorScheme.onSurface
                 : theme.colorScheme.primary;
-    // Scales the fixed theme text size down to fit whenever the cell itself
-    // is smaller than what that size assumes - true for every cell on a
-    // Samurai board, whose 21-wide grid gives each cell a fraction of a
-    // classic board's width. A cell that's already big enough (classic)
-    // isn't affected, since FittedBox never scales up past 1x here.
-    final baseSize = theme.textTheme.headlineSmall?.fontSize;
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: Text(
         '${cell.value}',
         style: theme.textTheme.headlineSmall?.copyWith(
           color: color,
-          fontSize: baseSize == null ? null : baseSize * fontScale,
+          fontSize: cellSize * 0.6,
           fontWeight: isHighlighted ? FontWeight.w800 : (cell.isGiven ? FontWeight.w700 : FontWeight.w500),
         ),
       ),
     );
   }
 
-  Widget _buildNotes(ThemeData theme) {
+  Widget _buildNotes(ThemeData theme, double cellSize) {
     if (cell.notes.isEmpty) return const SizedBox.expand();
     final normalStyle = theme.textTheme.labelSmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
       height: 1,
-      fontSize: 12 * noteFontScale,
+      fontSize: cellSize * 0.24,
     );
     final matchingStyle = normalStyle?.copyWith(
       color: highlightColor,
@@ -167,9 +160,8 @@ class SudokuCellWidget extends StatelessWidget {
                             '$digit',
                             style: isMatching ? matchingStyle : normalStyle,
                           );
-                          // See _buildValue: shrinks to fit a Samurai cell's
-                          // much smaller notes sub-grid without affecting a
-                          // classic cell, where it already fits.
+                          // Safety net (see build()) in case the estimated
+                          // note font size overshoots this note's sub-slot.
                           if (!isMatching) return FittedBox(fit: BoxFit.scaleDown, child: text);
                           return FittedBox(
                             fit: BoxFit.scaleDown,

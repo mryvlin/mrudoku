@@ -349,21 +349,20 @@ class _Board extends StatelessWidget {
       highlightColor: highlightColor,
       showErrors: showErrors,
       hintFocusUnit: hintFocusUnit,
-      // A bit smaller than the largest size that would still fit each of
-      // Samurai's much denser cells, so digits and notes read a little
-      // airier there instead of always filling every available pixel.
-      // Notes get their own, smaller factor - they're already tiny (a 3x3
-      // sub-grid within the cell), so the same factor as entered values
-      // still reads cramped. Classic keeps its usual size unchanged.
-      fontScale: isClassic ? 1 : 0.75,
-      noteFontScale: isClassic ? 1 : 0.6,
       onCellTap: onCellTap,
     );
     if (isClassic) return boardWidget;
-    return InteractiveViewer(
-      minScale: 1,
-      maxScale: 4,
-      child: boardWidget,
+    // Sits inside a Center, which gives loose constraints - without this,
+    // InteractiveViewer shrinks to whatever size its AspectRatio'd child
+    // wants at 1x zoom (letterboxed to the shape's own aspect ratio), so
+    // zooming in just enlarges content within that same small viewport
+    // instead of actually using the screen space around it.
+    return SizedBox.expand(
+      child: InteractiveViewer(
+        minScale: 1,
+        maxScale: 4,
+        child: boardWidget,
+      ),
     );
   }
 }

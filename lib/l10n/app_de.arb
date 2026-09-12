@@ -19,8 +19,10 @@
     }
   },
 
-  "newGame": "Neues Spiel",
-  "@newGame": {"description": "Heading above the difficulty buttons on the Home screen."},
+  "gameModeLabel": "Spielmodus",
+  "@gameModeLabel": {"description": "Heading above the board layout selector on the Home screen."},
+  "difficultyLevelLabel": "Schwierigkeit",
+  "@difficultyLevelLabel": {"description": "Heading above the difficulty selector on the Home screen."},
 
   "pause": "Pausieren",
   "@pause": {"description": "Tooltip for the pause button while the game is running."},
@@ -129,6 +131,12 @@
   "@boardLayoutClassic": {"description": "Board layout name: a single 9x9 grid."},
   "boardLayoutSamurai": "Samurai",
   "@boardLayoutSamurai": {"description": "Board layout name: five overlapping 9x9 grids in a cross."},
+  "boardLayoutTwin": "Zwilling",
+  "@boardLayoutTwin": {"description": "Board layout name: two overlapping 9x9 grids sharing one box."},
+  "boardLayoutGattai8": "Gattai-8",
+  "@boardLayoutGattai8": {"description": "Board layout name: eight overlapping 9x9 grids in a 3-2-3 arrangement."},
+  "boardLayoutSohei": "Sohei",
+  "@boardLayoutSohei": {"description": "Board layout name: four overlapping 9x9 grids in a ring, with a hole in the center."},
 
   "undoLabel": "Rückgängig",
   "@undoLabel": {"description": "Toolbar button label."},

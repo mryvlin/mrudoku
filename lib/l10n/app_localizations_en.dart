@@ -24,7 +24,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get newGame => 'New Game';
+  String get gameModeLabel => 'Game mode';
+
+  @override
+  String get difficultyLevelLabel => 'Difficulty';
 
   @override
   String get pause => 'Pause';
@@ -147,6 +150,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get boardLayoutSamurai => 'Samurai';
+
+  @override
+  String get boardLayoutTwin => 'Twin';
+
+  @override
+  String get boardLayoutGattai8 => 'Gattai-8';
+
+  @override
+  String get boardLayoutSohei => 'Sohei';
 
   @override
   String get undoLabel => 'Undo';

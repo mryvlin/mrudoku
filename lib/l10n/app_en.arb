@@ -5,7 +5,8 @@
   "resume": "Resume",
   "hintDismiss": "Got it",
   "resumeButtonLabel": "Resume - {difficulty} ({time})",
-  "newGame": "New Game",
+  "gameModeLabel": "Game mode",
+  "difficultyLevelLabel": "Difficulty",
   "pause": "Pause",
   "gameTitle": "Sudoku - {difficulty}",
   "wonTitle": "Solved! 🎉",
@@ -56,6 +57,9 @@
 
   "boardLayoutClassic": "Classic",
   "boardLayoutSamurai": "Samurai",
+  "boardLayoutTwin": "Twin",
+  "boardLayoutGattai8": "Gattai-8",
+  "boardLayoutSohei": "Sohei",
 
   "undoLabel": "Undo",
   "redoLabel": "Redo",

@@ -122,11 +122,17 @@ abstract class AppLocalizations {
   /// **'Fortsetzen - {difficulty} ({time})'**
   String resumeButtonLabel(String difficulty, String time);
 
-  /// Heading above the difficulty buttons on the Home screen.
+  /// Heading above the board layout selector on the Home screen.
   ///
   /// In de, this message translates to:
-  /// **'Neues Spiel'**
-  String get newGame;
+  /// **'Spielmodus'**
+  String get gameModeLabel;
+
+  /// Heading above the difficulty selector on the Home screen.
+  ///
+  /// In de, this message translates to:
+  /// **'Schwierigkeit'**
+  String get difficultyLevelLabel;
 
   /// Tooltip for the pause button while the game is running.
   ///
@@ -361,6 +367,24 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Samurai'**
   String get boardLayoutSamurai;
+
+  /// Board layout name: two overlapping 9x9 grids sharing one box.
+  ///
+  /// In de, this message translates to:
+  /// **'Zwilling'**
+  String get boardLayoutTwin;
+
+  /// Board layout name: eight overlapping 9x9 grids in a 3-2-3 arrangement.
+  ///
+  /// In de, this message translates to:
+  /// **'Gattai-8'**
+  String get boardLayoutGattai8;
+
+  /// Board layout name: four overlapping 9x9 grids in a ring, with a hole in the center.
+  ///
+  /// In de, this message translates to:
+  /// **'Sohei'**
+  String get boardLayoutSohei;
 
   /// Toolbar button label.
   ///

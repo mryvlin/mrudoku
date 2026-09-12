@@ -56,13 +56,22 @@ class PuzzleShape {
   /// without recomputing unit intersections on every hint lookup.
   final List<(Unit, Unit)> linkedUnitPairs;
 
+  /// Every other cell sharing at least one unit with a given cell - i.e.
+  /// every cell placing a value there could rule out - precomputed once per
+  /// shape instead of re-walking `unitsByCell` for the same cell on every
+  /// solver call. 3-8 cells for an ordinary cell (row + column + box, minus
+  /// double-counted overlaps); more at a Samurai/Gattai-8/Sohei shared-box
+  /// cell, which has extra row/column units too.
+  final Map<(int, int), List<(int, int)>> peersByCell;
+
   PuzzleShape._({
     required this.height,
     required this.width,
     required this.activeCells,
     required this.units,
   })  : unitsByCell = _buildUnitsByCell(units),
-        linkedUnitPairs = _buildLinkedUnitPairs(units);
+        linkedUnitPairs = _buildLinkedUnitPairs(units),
+        peersByCell = _buildPeersByCell(units);
 
   static Map<(int, int), List<Unit>> _buildUnitsByCell(List<Unit> units) {
     final map = <(int, int), List<Unit>>{};
@@ -72,6 +81,19 @@ class PuzzleShape {
       }
     }
     return map;
+  }
+
+  static Map<(int, int), List<(int, int)>> _buildPeersByCell(List<Unit> units) {
+    final peerSets = <(int, int), Set<(int, int)>>{};
+    for (final unit in units) {
+      for (final cell in unit.cells) {
+        final peers = peerSets.putIfAbsent(cell, () => {});
+        for (final other in unit.cells) {
+          if (other != cell) peers.add(other);
+        }
+      }
+    }
+    return {for (final entry in peerSets.entries) entry.key: entry.value.toList()};
   }
 
   static List<(Unit, Unit)> _buildLinkedUnitPairs(List<Unit> units) {
@@ -101,6 +123,40 @@ class PuzzleShape {
   /// 21x21; only 369 of its 441 cells are real (5*81 minus the 4 shared
   /// boxes' 9 cells each, which would otherwise be double-counted).
   static final PuzzleShape samurai = _buildSamurai();
+
+  /// Two 9x9 grids offset by 6 rows and 6 columns from each other, sharing
+  /// exactly the one 3x3 box where they overlap - the same corner-to-center
+  /// relationship Samurai uses, just between two grids instead of five. The
+  /// bounding box is 15x15; 153 of its 225 cells are real (2*81 minus the
+  /// shared box's 9 cells, double-counted otherwise).
+  static final PuzzleShape twin = _buildFromGridOrigins(const [(0, 0), (6, 6)]);
+
+  /// Eight 9x9 grids in a "3-2-3" arrangement (also known as Harakiri): a
+  /// top row of 3 and a bottom row of 3, bridged by 2 middle-row grids each
+  /// straddling the gap between two of the outer grids, sharing one 3x3 box
+  /// with each of its 4 neighbors (4 top/bottom pairings x 2 middle grids =
+  /// 8 shared boxes total). Geometry verified against a real generated
+  /// puzzle's cell counts (576 active cells = 8*81 - 8*9). The bounding box
+  /// is 21x33.
+  static final PuzzleShape gattai8 = _buildFromGridOrigins(const [
+    (0, 0), (0, 12), (0, 24), // top row
+    (6, 6), (6, 18), // middle row, bridging the gaps
+    (12, 0), (12, 12), (12, 24), // bottom row
+  ]);
+
+  /// Four 9x9 grids in a ring (a "pinwheel"): top, left, right and bottom,
+  /// each sharing one 3x3 box with its two ring-neighbors (top-left,
+  /// top-right, bottom-left, bottom-right) but never with the grid directly
+  /// opposite it - unlike Samurai, there's no 5th grid filling the center,
+  /// just a genuine 3x3 hole there. The bounding box is 21x21; 288 of its
+  /// 441 cells are real (4*81 minus the 4 shared boxes' 9 cells each).
+  /// Geometry verified against a real generated puzzle's cell counts.
+  static final PuzzleShape sohei = _buildFromGridOrigins(const [
+    (0, 6), // top
+    (6, 0), // left
+    (6, 12), // right
+    (12, 6), // bottom
+  ]);
 
   static PuzzleShape _buildClassic() => _buildFromGridOrigins(const [(0, 0)]);
 
